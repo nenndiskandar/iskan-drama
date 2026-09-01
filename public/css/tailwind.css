@@ -1,0 +1,39 @@
+/* Tailwind directives — diproses oleh tailwindcss CLI / build */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Pocket skin custom styles ===== */
+:root {
+  /* warna utama diambil dari tailwind.config.js (colors.pocket) */
+  --pocket-bg: theme('colors.pocket.bg');
+  --pocket-card: theme('colors.pocket.card');
+  --pocket-accent: theme('colors.pocket.accent');
+  --pocket-accent-hover: theme('colors.pocket.accent-hover');
+  --pocket-text-primary: theme('colors.pocket.text-primary');
+  --pocket-text-secondary: theme('colors.pocket.text-secondary');
+  --pocket-border: theme('colors.pocket.border');
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: theme('colors.pocket.bg'); }
+::-webkit-scrollbar-thumb {
+  background: theme('colors.pocket.border');
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: theme('colors.pocket.accent'); }
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

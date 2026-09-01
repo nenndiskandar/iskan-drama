@@ -1,0 +1,42 @@
+<header class="bg-pocket-card border-b border-pocket-border sticky top-0 z-30">
+  <div class="container mx-auto px-3 py-3 flex items-center justify-between">
+    <!-- Logo -->
+    <a href="/" class="flex items-center space-x-2">
+      <img src="/images/logo.png" alt="Narto Drama" class="h-8 w-auto">
+      <span class="text-xl font-bold text-white">Narto<span class="text-pocket-accent">Drama</span></span>
+    </a>
+
+    <!-- Desktop nav -->
+    <nav class="hidden md:flex items-center space-x-6 text-sm font-medium">
+      <a href="/" class="<%= lang === 'en-US' ? 'text-pocket-accent' : 'text-pocket-text-secondary' %> hover:text-white transition-colors">Home</a>
+      <a href="/featured" class="text-pocket-text-secondary hover:text-white transition-colors">Featured</a>
+      <a href="/contact" class="text-pocket-text-secondary hover:text-white transition-colors">Contact</a>
+    </nav>
+
+    <!-- Provider filter (mobile + desktop) -->
+    <form id="provider-filter" method="GET" action="/" class="flex items-center space-x-2">
+      <select name="provider" id="provider" onchange="document.getElementById('provider-filter').submit()"
+        class="bg-pocket-bg border border-pocket-border rounded px-2 py-1 text-sm text-pocket-text-primary focus:outline-none focus:ring-1 focus:ring-pocket-accent hidden sm:block">
+        <option value="">All Providers</option>
+        <% if (typeof providers !== 'undefined' && providers.length) { %>
+          <% providers.forEach(p => { %>
+            <option value="<%= p.value %>" <%= typeof activeProvider !== 'undefined' && p.value === activeProvider ? 'selected' : '' %>><%= p.label %></option>
+          <% }) %>
+        <% } %>
+      </select>
+
+      <!-- Lang toggle -->
+      <select onchange="location = this.value" class="bg-pocket-bg border border-pocket-border rounded px-2 py-1 text-xs text-pocket-text-primary focus:outline-none">
+        <option value="/?lang=en-US&provider=<%= typeof activeProvider !== 'undefined' ? activeProvider : '' %>" <%= lang === 'en-US' ? 'selected' : '' %>>EN</option>
+        <option value="/?lang=id-ID&provider=<%= typeof activeProvider !== 'undefined' ? activeProvider : '' %>" <%= lang === 'id-ID' ? 'selected' : '' %>>ID</option>
+      </select>
+    </form>
+  </div>
+
+  <!-- Provider label breadcrumb -->
+  <% if (typeof providerLabel !== 'undefined' && providerLabel) { %>
+    <div class="bg-pocket-bg border-t border-b border-pocket-border px-3 py-2">
+      <span class="text-xs text-pocket-text-secondary">Provider: <%= providerLabel %></span>
+    </div>
+  <% } %>
+</header>

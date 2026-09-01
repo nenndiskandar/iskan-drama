@@ -1,0 +1,56 @@
+<div class="grid md:grid-cols-[280px_1fr] gap-6">
+  <!-- Poster -->
+  <div>
+    <% const m = movie; %>
+    <% if (m.poster_url && m.poster_url !== '/images/fallback.png') { %>
+      <img src="<%= m.poster_url %>" alt="<%= m.title %>"
+           class="w-full rounded-lg border border-pocket-border shadow-md object-cover aspect-[2/3]">
+    <% } else { %>
+      <div class="flex items-center justify-center h-[420px] rounded-lg border border-pocket-border bg-pocket-bg text-4xl font-bold text-pocket-accent">
+        <%= String(movie.title || 'N').trim().charAt(0).toUpperCase() %>
+      </div>
+    <% } %>
+
+    <a href="<%= movie.watch_url %>"
+       class="mt-4 flex items-center justify-center gap-2 bg-pocket-accent hover:bg-pocket-accent-hover text-white font-semibold py-2.5 rounded-lg transition-colors">
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 9V5l5 4-5 4v-4z"/></svg>
+      Watch Now
+    </a>
+  </div>
+
+  <!-- Details -->
+  <div class="space-y-5">
+    <h1 class="text-2xl md:text-3xl font-bold text-white"><%= movie.title %></h1>
+
+    <!-- Meta row -->
+    <div class="flex flex-wrap gap-3 text-sm">
+      <% if (movie.episodes) { %>
+        <span class="text-pocket-text-secondary">📺 <%= movie.episodes %> Episodes</span>
+      <% } %>
+      <% if (movie.category) { %>
+        <span class="text-pocket-text-secondary">📂 <%= movie.category %></span>
+      <% } %>
+      <% if (movie.source_type) { %>
+        <span class="text-xs bg-pocket-bg border border-pocket-border text-pocket-text-secondary px-2 py-0.5 rounded"><%= movie.source_type %></span>
+      <% } %>
+    </div>
+
+    <!-- Tags -->
+    <% if (movie.tags && movie.tags.length) { %>
+      <div class="flex flex-wrap gap-2">
+        <% movie.tags.forEach(function(tag) { %>
+          <a href="/tag/<%= encodeURIComponent(tag.toLowerCase().replace(/[^a-z0-9]+/g,'-')) %>?lang=<%= lang %>"
+             class="text-xs bg-pocket-bg border border-pocket-border text-pocket-text-secondary px-2.5 py-1 rounded hover:border-pocket-accent hover:text-pocket-accent transition-colors">
+            #<%= tag %>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <!-- Synopsis -->
+    <div class="prose prose-invert max-w-none">
+      <h2 class="text-lg font-semibold text-white mb-2">Synopsis</h2>
+      <p class="text-pocket-text-secondary leading-relaxed"><%= movie.description || 'No synopsis available.' %></p>
+    </div>
+  </div>
+</div>

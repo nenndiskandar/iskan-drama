@@ -1,0 +1,55 @@
+<%
+  // movie-card.ejs — satu kartu drama
+  // expects: movie { id, title, episodes, poster, tags[], url }
+  const m = movie || {};
+  const mUrl = m.watch_url || m.url || ('/detail/watch/' + (m.slug || m.id));
+  const epText = m.episodes ? 'Ep: ' + m.episodes : '';
+%>
+<a href="<%= m.detail_url %>" class="group block bg-pocket-card border border-pocket-border rounded-lg overflow-hidden hover:border-pocket-accent hover:shadow-lg hover:shadow-pocket-accent/10 transition-all duration-200">
+  <!-- Poster -->
+  <div class="relative aspect-[2/3] overflow-hidden bg-pocket-bg">
+    <% if (m.poster && m.poster !== '/images/fallback.png') { %>
+      <img src="<%= m.poster %>"
+           alt="<%= m.title %>"
+           class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+           loading="lazy"
+           onerror="this.parentNode.innerHTML='<div class=\'flex items-center justify-center h-full text-4xl font-bold text-pocket-accent\'>'+(this.alt.charAt(0).toUpperCase()||'N')+'</div>'">
+    <% } else { %>
+      <div class="flex items-center justify-center h-full text-5xl font-bold text-pocket-accent">
+        <%= String(m.title || 'N').trim().charAt(0).toUpperCase() %>
+      </div>
+    <% } %>
+
+    <!-- Episode badge -->
+    <% if (epText) { %>
+      <span class="absolute top-2 right-2 bg-pocket-accent text-white text-[10px] font-semibold px-2 py-0.5 rounded">
+        <%= epText %>
+      </span>
+    <% } %>
+
+    <!-- Hover play overlay -->
+    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
+      <div class="opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-300 w-12 h-12 rounded-full bg-pocket-accent flex items-center justify-center">
+        <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.5 13.5l4-3.5-4-3.5v7z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div class="p-2">
+    <h3 class="text-xs font-semibold text-pocket-text-primary leading-snug line-clamp-2 group-hover:text-pocket-accent transition-colors">
+      <%= m.title %>
+    </h3>
+
+    <!-- Tags (first 3) -->
+    <% if (m.tags && m.tags.length) { %>
+      <div class="mt-1.5 flex flex-wrap gap-1">
+        <% m.tags.slice(0, 3).forEach(t => { %>
+          <span class="text-[9px] bg-pocket-bg border border-pocket-border text-pocket-text-secondary px-1.5 py-0.5 rounded">
+            #<%= t %>
+          </span>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</a>
