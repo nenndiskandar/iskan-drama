@@ -1,2 +1,7 @@
 node_modules/
 .env
+# optional: ignore built CSS if you want to rebuild on deploy
+# public/css/styles.css
+# ignore OS files
+.DS_Store
+Thumbs.db

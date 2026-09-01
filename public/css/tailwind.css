@@ -1,39 +1,38 @@
-/* Tailwind directives — diproses oleh tailwindcss CLI / build */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Pocket skin custom styles ===== */
-:root {
-  /* warna utama diambil dari tailwind.config.js (colors.pocket) */
-  --pocket-bg: theme('colors.pocket.bg');
-  --pocket-card: theme('colors.pocket.card');
-  --pocket-accent: theme('colors.pocket.accent');
-  --pocket-accent-hover: theme('colors.pocket.accent-hover');
-  --pocket-text-primary: theme('colors.pocket.text-primary');
-  --pocket-text-secondary: theme('colors.pocket.text-secondary');
-  --pocket-border: theme('colors.pocket.border');
+@layer base {
+  html, body {
+    background-color: #0b0f19;
+    color: #94a3b8;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+  }
+}
+
+/* Transmit custom glass gradient & glow */
+.transmit-glow {
+  background: radial-gradient(1000px circle at 50% -200px, rgba(139, 92, 246, 0.15), transparent 70%);
+}
+
+.transmit-card {
+  background: rgba(21, 29, 42, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.transmit-card:hover {
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.2);
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: theme('colors.pocket.bg'); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0b0f19; }
 ::-webkit-scrollbar-thumb {
-  background: theme('colors.pocket.border');
+  background: #1e293b;
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover { background: theme('colors.pocket.accent'); }
-
-/* Line clamp utilities */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+::-webkit-scrollbar-thumb:hover { background: #8b5cf6; }

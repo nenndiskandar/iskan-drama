@@ -1,34 +1,26 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./views/**/*.ejs", "./public/**/*.js"],
+  content: ["./public/**/*.html", "./public/**/*.js"],
+  safelist: ["aspect-[2/3]", "aspect-[3/4]", "aspect-video"],
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
+        slate: {
+          850: "#131c2e",
+          950: "#0b0f19",
         },
-        // Pocket skin dark-accent colors
-        pocket: {
-          bg: "#0f1117",
-          card: "#171a21",
-          accent: "#ff3e6a",
-          "accent-hover": "#ff1e4d",
-          "text-primary": "#e5e7eb",
-          "text-secondary": "#9ca3af",
-          border: "#2a2f3a",
+        transmit: {
+          bg: "#0b0f19",
+          card: "#151d2a",
+          cardBorder: "#222f43",
+          accent: "#8b5cf6", // violet-500
+          accentHover: "#7c3aed",
+          accentLight: "#a78bfa",
+          pink: "#ec4899",
         },
       },
       fontFamily: {
-        body: ["Inter", "ui-sans", "system-ui", "sans-serif"],
+        body: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["Fira Code", "monospace"],
       },
     },

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="id-ID" class="h-full bg-[#0b0f19]">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iskan Drama — Stream Short Dramas</title>
+  <meta name="description" content="Listen and watch short drama mini-series free. Powered by Transmit audio/video UI.">
+  <link rel="icon" type="image/svg+xml" href="/images/logo.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="flex min-h-full flex-col bg-[#0b0f19] text-slate-400 font-body antialiased transmit-glow overflow-x-hidden">
+
+  <!-- Transmit Header Layout -->
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-[#0b0f19]/80 backdrop-blur-md">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
+      
+      <!-- Brand / Logo -->
+      <a href="#/" class="flex items-center gap-3 group">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-pink-500 text-white shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform">
+          <svg class="h-5 w-5 fill-current" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-lg font-extrabold tracking-tight text-white group-hover:text-violet-400 transition-colors">Iskan<span class="text-violet-500">Drama</span></span>
+          <span class="text-[10px] font-medium text-slate-400 tracking-wider uppercase">Transmit Stream Engine</span>
+        </div>
+      </a>
+
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-grow">
+    <div id="app" class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-center py-20">
+        <div class="flex flex-col items-center gap-3">
+          <div class="h-10 w-10 animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500"></div>
+          <span class="text-xs font-medium text-slate-500">Loading Transmit feed...</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Transmit Footer -->
+  <footer class="border-t border-slate-800/60 bg-[#0b0f19] py-8">
+    <div class="mx-auto max-w-7xl px-4 text-center text-xs text-slate-500 sm:px-6 lg:px-8">
+      <p class="font-medium text-slate-400 mb-1">Iskan Drama — Transmit Template Edition</p>
+      <p>Short drama streaming index. All rights reserved by respective providers.</p>
+    </div>
+  </footer>
+
+  <script defer src="/js/main.js"></script>
+  <script src="/vendor/hls.min.js"></script>
+</body>
+</html>
