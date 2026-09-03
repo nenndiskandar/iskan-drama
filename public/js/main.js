@@ -97,7 +97,7 @@
         : '<div class="flex h-full w-full items-center justify-center bg-slate-900 text-3xl font-extrabold text-violet-500">' + esc((m.title || 'N').trim().charAt(0).toUpperCase()) + '</div>';
 
     return (
-      '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/50 p-3 transition-all duration-300 hover:border-violet-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-violet-500/10">' +
+      '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="group relative flex flex-col overflow-hidden rounded-xl border border-slate-800/60 bg-slate-900/50 p-1.5 transition-all duration-300 hover:border-violet-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-violet-500/10">' +
       '<div class="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-slate-950">' +
       poster + epBadge + titleBadge +
       '<div class="absolute inset-0 bg-slate-950/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center backdrop-blur-[2px]">' +
@@ -218,11 +218,11 @@
         var bodyHtml = '';
         var pagHTML = '';
         if (state.query) {
-          bodyHtml = '<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5 w-full">' +
+          bodyHtml = '<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 w-full">' +
             (state.queryItems || []).map(movieCard).join('') + '</div>';
         } else if (movies.length) {
           pagHTML = paginationHTML(pagination);
-          bodyHtml = '<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5 w-full">' +
+          bodyHtml = '<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 w-full">' +
             movies.map(movieCard).join('') + '</div>';
         } else {
           bodyHtml = '<div class="text-center py-16"><img src="/images/empty.png" alt="" class="mx-auto h-24 opacity-30">' +
@@ -258,7 +258,7 @@
               .then(function (res) {
                 state.queryItems = (res.items || res.data || []).map(function (item) { return norm(item); });
                 var updatedGrid = state.queryItems.length
-                  ? '<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5 w-full">' +
+                  ? '<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 w-full">' +
                     state.queryItems.map(movieCard).join('') + '</div>'
                   : '<div class="text-center py-16"><img src="/images/empty.png" alt="" class="mx-auto h-24 opacity-30">' +
                     '<p class="mt-4 text-slate-400">Tidak ada drama "' + esc(val) + '" ditemukan.</p></div>';
@@ -277,7 +277,7 @@
                   return acc.concat((s.items || []).map(function (item) { return norm(item, s.tab_label); }));
                 }, []);
                 var updatedGrid = nMovies.length
-                  ? '<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5 w-full">' +
+                  ? '<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4 w-full">' +
                     nMovies.map(movieCard).join('') + '</div>'
                   : '<div class="text-center py-16 text-slate-400">Tidak ada drama.</div>';
                 if (gc) gc.innerHTML = updatedGrid;
