@@ -17,7 +17,20 @@
   @media (max-width:639px){
     .grid.grid-cols-3{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
   }
+  /* PC Shield: paksa grid 6-8 kolom di atas 1024px */
+  @media (min-width:1024px){
+    .grid.grid-cols-6{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important}
+  }
+  @media (min-width:1280px){
+    .grid.grid-cols-8{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important}
+  }
 </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .grid.grid-cols-3{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+    @media (min-width:768px){.grid.grid-cols-3{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+    @media (min-width:1024px){.grid.grid-cols-3{grid-template-columns:repeat(6,minmax(0,1fr))!important}}
+  </style>
 </head>
 <body class="flex min-h-full flex-col bg-[#0b0f19] text-slate-400 font-body antialiased transmit-glow overflow-x-hidden">
 
@@ -59,7 +72,7 @@
     </div>
   </footer>
 
-  <script defer src="/js/main.js?v=1788418549"></script>
+  <script defer src="/js/main.js?v=1788447067"></script>
   <script src="/vendor/hls.min.js"></script>
 </body>
 </html>
