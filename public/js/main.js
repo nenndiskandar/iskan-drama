@@ -100,6 +100,10 @@
       '</div></div></div>' +
       '<div class="pt-2">' +
       '<h3 class="text-[11px] font-medium text-slate-100 leading-snug">' + esc(m.title) + '</h3>' +
+      (m.category ? '<p class="mt-0.5 text-[10px] text-slate-400 truncate">' + esc(m.category) + '</p>' : '') +
+      (m.tags && m.tags.length ? '<div class="mt-1 flex flex-wrap gap-1">' + m.tags.slice(0, 2).map(function (t) {
+        return '<span class="rounded bg-slate-800/80 px-1 py-0.5 text-[9px] font-medium text-slate-300">#' + esc(t) + '</span>';
+      }).join('') + '</div>' : '') +
       '</div>' +
       '</a>'
     );
@@ -107,17 +111,36 @@
 
   function paginationHTML(p) {
     if (!p || p.total <= 1) return '';
-    var links = '';
-    for (var i = 1; i <= p.total; i++) {
-      links +=
-        '<a href="#/?page=' + i + (state.provider ? '&provider=' + encodeURIComponent(state.provider) : '') +
-        '" class="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-semibold transition-all ' +
-        (i === p.current
-          ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-          : 'border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-violet-500 hover:text-white') +
-        '">' + i + '</a>';
+
+    function link(page, label, cls) {
+      var url = '#/?page=' + page + (state.provider ? '&provider=' + encodeURIComponent(state.provider) : '');
+      return '<a href="' + url + '" class="' + cls + '">' + label + '</a>';
     }
-    return '<div class="flex items-center justify-center gap-2 mt-10">' + links + '</div>';
+    function numCls(i) {
+      return i === p.current
+        ? 'flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-xs font-semibold bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+        : 'flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-xs font-semibold border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-violet-500 hover:text-white';
+    }
+
+    var total = p.total, cur = p.current;
+    var MAX = 8; // window lebarnya maks 8 tombol angka
+    var html = '';
+
+    // prev
+    html += cur > 1 ? link(cur - 1, '‹', 'flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-violet-500') : '';
+
+    var start = Math.max(1, cur - 3);
+    var end = Math.min(total, start + MAX - 1);
+    start = Math.max(1, end - MAX + 1);
+
+    if (start > 1) html += link(1, '1', numCls(1)) + '<span class="text-slate-600 px-1">…</span>';
+    for (var i = start; i <= end; i++) html += link(i, String(i), numCls(i));
+    if (end < total) html += '<span class="text-slate-600 px-1">…</span>' + link(total, String(total), numCls(total));
+
+    // next
+    html += cur < total ? link(cur + 1, '›', 'flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-violet-500') : '';
+
+    return '<div class="flex items-center justify-center flex-wrap gap-2 mt-10">' + html + '</div>';
   }
 
   // ===================================================================
