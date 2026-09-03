@@ -84,9 +84,6 @@
       ? '<span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">' + m.episodes + ' ep</span>'
       : '';
 
-    var sub = (m.provider || '')
-      ? '<p class="text-[10px] text-slate-400 truncate">' + esc(m.provider) + '</p>'
-      : '';
 
     var poster =
       m.poster && m.poster !== '/images/fallback.png'
@@ -101,9 +98,8 @@
       '<div class="flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition-transform duration-300 group-hover:scale-110">' +
       '<svg class="h-5 w-5 ml-0.5 fill-current" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>' +
       '</div></div></div>' +
-      '<div class="pt-2 space-y-0.5">' +
+      '<div class="pt-2">' +
       '<h3 class="text-[11px] font-medium text-slate-100 leading-snug">' + esc(m.title) + '</h3>' +
-      sub +
       '</div>' +
       '</a>'
     );
