@@ -97,7 +97,7 @@
         : '<div class="flex h-full w-full items-center justify-center bg-slate-900 text-3xl font-extrabold text-violet-500">' + esc((m.title || 'N').trim().charAt(0).toUpperCase()) + '</div>';
 
     return (
-      '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="group relative flex flex-col overflow-hidden rounded-xl border border-slate-800/60 bg-slate-900/50 p-1.5 transition-all duration-300 hover:border-violet-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-violet-500/10">' +
+      '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="group relative flex flex-col overflow-hidden rounded-xl bg-slate-900/40 p-1.5 transition-all duration-300 hover:border-violet-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-violet-500/10">' +
       '<div class="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-slate-950">' +
       poster + epBadge +
       '<div class="absolute inset-0 bg-slate-950/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center backdrop-blur-[2px]">' +
