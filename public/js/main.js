@@ -84,8 +84,8 @@
       ? '<span class="absolute top-2.5 right-2.5 rounded-full bg-violet-600/90 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-md">Ep ' + m.episodes + '</span>'
       : '';
 
-    var titleBadge = '<div class="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/85 via-black/70 to-transparent pt-8 pb-3 px-3">' +
-      '<h3 class="text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow-xl">' + esc(m.title) + '</h3></div>';
+    var titleBlock = '<div class="px-0.5 pt-2 pb-0.5">' +
+      '<h3 class="text-[13px] font-semibold text-slate-100 leading-snug line-clamp-2">' + esc(m.title) + '</h3></div>';
 
     var tags = (m.tags || []).slice(0, 2).map(function (t) {
       return '<span class="rounded-md bg-slate-900/80 px-2 py-0.5 text-[10px] font-medium text-slate-400 border border-slate-800">#' + esc(t) + '</span>';
@@ -99,12 +99,13 @@
     return (
       '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="group relative flex flex-col overflow-hidden rounded-xl border border-slate-800/60 bg-slate-900/50 p-1.5 transition-all duration-300 hover:border-violet-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-violet-500/10">' +
       '<div class="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-slate-950">' +
-      poster + epBadge + titleBadge +
+      poster + epBadge +
       '<div class="absolute inset-0 bg-slate-950/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center backdrop-blur-[2px]">' +
       '<div class="flex h-12 w-12 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/40 transition-transform duration-300 group-hover:scale-110">' +
       '<svg class="h-6 w-6 ml-0.5 fill-current" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>' +
       '</div></div></div>' +
-      (tags ? '<div class="mt-3 flex flex-wrap gap-1.5">' + tags + '</div>' : '') +
+      titleBlock +
+      (tags ? '<div class="mt-1.5 flex flex-wrap gap-1">' + tags + '</div>' : '') +
       '</a>'
     );
   }
