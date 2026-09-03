@@ -174,7 +174,7 @@
         // Provider Tabs Horizontal Scrollable Layout (Extra Horizontal Padding)
         var allTabActive = !state.provider;
         var providerTabs =
-          '<div class="flex items-center gap-2 overflow-x-auto w-full max-w-full pb-3 mb-6 border-b border-slate-800/80 px-0.5 scrollbar-thin">' +
+          '<div class="flex flex-wrap items-center gap-2 w-full max-w-full pb-3 mb-6 border-b border-slate-800/80 px-0.5">' +
           '<button type="button" data-provider="" style="border-radius: 9999px;" class="provider-btn whitespace-nowrap shrink-0 px-4 py-1.5 mx-0.5 text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center text-center cursor-pointer ' +
           (allTabActive ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30' : 'bg-slate-900/90 border border-slate-800 text-slate-200 hover:border-violet-500 hover:text-white') +
           '">' + providerIcon('', 'All') + 'All Providers</button>' +
