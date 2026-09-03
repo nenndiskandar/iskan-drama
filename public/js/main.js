@@ -22,6 +22,11 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  function hideLoading() {
+    var el = document.getElementById('player-loading');
+    if (el) el.classList.add('hidden');
+  }
+
   function fetchJSON(path, params) {
     var qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return fetch(API + path + qs).then(function (r) {
@@ -434,6 +439,9 @@
           '<div class="space-y-4">' +
           '<div class="bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex justify-center items-center max-h-[75vh] mx-auto w-fit min-w-[280px] relative">' +
           '<video id="hls-player" class="max-h-[75vh] w-auto h-auto max-w-full object-contain mx-auto" controls playsinline></video>' +
+          '<div id="player-loading" class="absolute inset-0 flex items-center justify-center bg-black/60">' +
+          '<div class="animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500 h-10 w-10"></div>' +
+          '</div>' +
           '<div id="player-fallback" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Memuat stream...</div>' +
           '</div>' +
           '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
@@ -491,10 +499,12 @@
             };
 
             if (video.canPlayType('application/vnd.apple.mpegurl')) {
+              hideLoading();
               video.src = data.url;
               video.play().catch(function () {});
             } else if (window.Hls && Hls.isSupported()) {
               var hls = new Hls();
+              hideLoading();
               hls.loadSource(data.url);
               hls.attachMedia(video);
               hls.on(Hls.Events.MANIFEST_PARSED, function () {
@@ -503,11 +513,13 @@
             } else {
               var fb = document.getElementById('player-fallback');
               if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Browser tidak mendukung HLS.'; }
+              hideLoading();
             }
           })
           .catch(function (err) {
             var fb = document.getElementById('player-fallback');
             if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Gagal memuat stream: ' + esc(err.message || err); }
+            hideLoading();
           });
       })
       .catch(function () { showError('Video tidak ditemukan.'); });

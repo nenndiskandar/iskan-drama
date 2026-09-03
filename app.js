@@ -13,7 +13,13 @@ app.use(express.json({ limit: '1mb' }));
 // ------------------------------------------------------------------
 // Static SPA
 // ------------------------------------------------------------------
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  // Static app files must never be cached (Cloudflare proxy set a ~15h
+  // max-age which served stale JS/CSS to mobile). Force revalidation.
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-store, must-revalidate');
+  },
+}));
 
 // ------------------------------------------------------------------
 // Raw pass-through proxy — NO relay, NO transform, NO cache.
