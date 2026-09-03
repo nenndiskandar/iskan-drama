@@ -166,13 +166,13 @@
         // Provider Tabs Horizontal Scrollable Layout (Extra Horizontal Padding)
         var allTabActive = !state.provider;
         var providerTabs =
-          '<div class="flex items-center gap-3 overflow-x-auto w-full max-w-full pb-4 mb-6 border-b border-slate-800/80 px-1">' +
-          '<button type="button" data-provider="" style="border-radius: 7px;" class="provider-btn whitespace-nowrap shrink-0 px-8 py-3 mx-0.5 text-xs sm:text-sm font-bold transition-all inline-flex items-center justify-center text-center cursor-pointer ' +
+          '<div class="flex items-center gap-2 overflow-x-auto w-full max-w-full pb-3 mb-6 border-b border-slate-800/80 px-0.5 scrollbar-thin">' +
+          '<button type="button" data-provider="" style="border-radius: 9999px;" class="provider-btn whitespace-nowrap shrink-0 px-4 py-1.5 mx-0.5 text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center text-center cursor-pointer ' +
           (allTabActive ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30' : 'bg-slate-900/90 border border-slate-800 text-slate-200 hover:border-violet-500 hover:text-white') +
           '">' + providerIcon('', 'All') + 'All Providers</button>' +
           providers.map(function (p) {
             var active = state.provider === p.key;
-            return '<button type="button" data-provider="' + esc(p.key) + '" style="border-radius: 7px;" class="provider-btn whitespace-nowrap shrink-0 px-8 py-3 mx-0.5 text-xs sm:text-sm font-bold transition-all inline-flex items-center justify-center text-center cursor-pointer ' +
+            return '<button type="button" data-provider="' + esc(p.key) + '" style="border-radius: 9999px;" class="provider-btn whitespace-nowrap shrink-0 px-4 py-1.5 mx-0.5 text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center text-center cursor-pointer ' +
               (active ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30' : 'bg-slate-900/90 border border-slate-800 text-slate-200 hover:border-violet-500 hover:text-white') +
               '">' + providerIcon(p.key, p.label) + esc(p.label) + '</button>';
           }).join('') +
@@ -207,19 +207,28 @@
           'Watch mini drama series, short episodes, and anime streams directly on your browser with Transmit layout.' +
           '</p></div></div>';
 
-        // Build content: flat grid tanpa label tab_label di mana pun
-        var movies = sections.reduce(function (acc, s) {
-          return acc.concat((s.items || []).map(function (i) { return norm(i, s.tab_label); }));
-        }, []);
+        // Build content: pisah per seksi dengan judul label (seperti trending)
+        function sectionBlock(s) {
+          var label = s.tab_label || s.tab_key || '';
+          var items = (s.items || []).map(function (i) { return norm(i, s.tab_label); });
+          if (!items.length) return '';
+          var head = label
+            ? '<div class="flex items-center gap-2 mb-4 mt-2"><span class="h-5 w-1 rounded-full bg-violet-500"></span>' +
+              '<h2 class="text-base sm:text-lg font-extrabold tracking-tight text-white">' + esc(label) + '</h2></div>'
+            : '';
+          var grid = '<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4 w-full">' +
+            items.map(movieCard).join('') + '</div>';
+          return '<section class="mb-10">' + head + grid + '</section>';
+        }
+
         var bodyHtml = '';
         var pagHTML = '';
         if (state.query) {
           bodyHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4 w-full">' +
             (state.queryItems || []).map(movieCard).join('') + '</div>';
-        } else if (movies.length) {
+        } else if (sections.length) {
           pagHTML = paginationHTML(pagination);
-          bodyHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4 w-full">' +
-            movies.map(movieCard).join('') + '</div>';
+          bodyHtml = sections.map(sectionBlock).join('');
         } else {
           bodyHtml = '<div class="text-center py-16"><img src="/images/empty.png" alt="" class="mx-auto h-24 opacity-30">' +
             '<p class="mt-4 text-slate-400">Tidak ada drama ditemukan. Coba provider lain.</p></div>';
@@ -314,9 +323,9 @@
               var btn = allBtns[b];
               var isTarget = btn.getAttribute('data-provider') === (state.provider || '');
               if (isTarget) {
-                btn.className = 'provider-btn whitespace-nowrap shrink-0 px-8 py-3 mx-0.5 text-xs sm:text-sm font-bold transition-all inline-flex items-center justify-center text-center cursor-pointer bg-violet-600 text-white shadow-lg shadow-violet-600/30';
+                btn.className = 'provider-btn whitespace-nowrap shrink-0 px-4 py-1.5 mx-0.5 text-xs sm:text-sm font-bold transition-all inline-flex items-center justify-center text-center cursor-pointer bg-violet-600 text-white shadow-lg shadow-violet-600/30';
               } else {
-                btn.className = 'provider-btn whitespace-nowrap shrink-0 px-8 py-3 mx-0.5 text-xs sm:text-sm font-bold transition-all inline-flex items-center justify-center text-center cursor-pointer bg-slate-900/90 border border-slate-800 text-slate-200 hover:border-violet-500 hover:text-white';
+                btn.className = 'provider-btn whitespace-nowrap shrink-0 px-4 py-1.5 mx-0.5 text-xs sm:text-sm font-bold transition-all inline-flex items-center justify-center text-center cursor-pointer bg-slate-900/90 border border-slate-800 text-slate-200 hover:border-violet-500 hover:text-white';
               }
             }
 
