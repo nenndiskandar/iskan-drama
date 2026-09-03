@@ -449,7 +449,15 @@
     showSpinner();
     ep = parseInt(ep || '1', 10) || 1;
     findMovie(decodeURIComponent(id))
-      .then(function (m) {
+      .then(function (m) { startWatch(m, ep); })
+      .catch(function () {
+        // id tak dikenal di sections → stream resolver (/api/stream) masih bisa
+        // resolve via heuristic provider. Mulai video langsung dgn title minimal.
+        startWatch({ id: decodeURIComponent(id), title: 'Drama ' + decodeURIComponent(id), category: '', episodes: null }, ep, true);
+      });
+  }
+
+  function startWatch(m, ep, bare) {
         var eps = [];
         var epCount = m.episodes || 1;
         for (var i = 1; i <= epCount; i++) eps.push(i);
@@ -557,8 +565,6 @@
             if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Gagal memuat stream: ' + esc(err.message || err); }
             hideLoading();
           });
-      })
-      .catch(function () { showError('Video tidak ditemukan.'); });
   }
 
   function parseHash() {
