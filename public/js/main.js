@@ -458,115 +458,150 @@
   }
 
   function startWatch(m, ep, bare) {
-        var eps = [];
-        var epCount = m.episodes || 1;
-        for (var i = 1; i <= epCount; i++) eps.push(i);
+    var eps = [];
+    var epCount = m.episodes || 1;
+    for (var i = 1; i <= epCount; i++) eps.push(i);
 
-        function renderEpBtn(n) {
-          var isCurrent = n === ep;
-          if (isCurrent) {
-            return '<span class="flex h-10 w-10 items-center justify-center text-xs font-bold rounded-lg bg-violet-600/50 text-white cursor-not-allowed opacity-75 ring-2 ring-violet-500/50">' + n + '</span>';
+    var video = null;       // cached <video> element
+    var curEp = ep;         // episode aktif (tanpa re-render)
+
+    function streamUrlFor(n) {
+      var provider = (m.category || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+      return '/api/stream/' + encodeURIComponent(m.id) +
+        '?ep=' + n +
+        '&provider=' + encodeURIComponent(provider) +
+        '&title=' + encodeURIComponent(m.title) +
+        '&lang=' + encodeURIComponent(state.lang);
+    }
+
+    // setUp+load stream utk episode tertentu ke video element (tanpa full re-render)
+    function startPlayback(url) {
+      hideLoading();
+      var fb = document.getElementById('player-fallback');
+      if (fb) { fb.classList.add('hidden'); fb.classList.remove('flex'); }
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url; video.play().catch(function () {});
+      } else if (window.Hls && Hls.isSupported()) {
+        var hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function () { video.play().catch(function () {}); });
+      } else {
+        if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Browser tidak mendukung HLS.'; }
+        hideLoading();
+      }
+    }
+
+    // panggil /api/stream lalu mulai playback utk episode n
+    function loadEp(n) {
+      curEp = n;
+      hideLoading();
+      fetch(streamUrlFor(n))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) throw new Error(data.message || 'stream not found');
+          if (data.total_eps && data.total_eps > eps.length) {
+            for (var k = eps.length + 1; k <= data.total_eps; k++) eps.push(k);
+            var el = document.getElementById('episode-list');
+            if (el) el.innerHTML = eps.map(renderEpBtn).join('');
+            var lab = document.querySelector('#app #ep-label');
+            if (lab) lab.textContent = 'Episode ' + curEp + ' of ' + eps.length;
           }
-          return '<a href="#/watch/' + encodeURIComponent(m.id) + '?ep=' + n + '" class="flex h-10 w-10 items-center justify-center text-xs font-bold rounded-lg transition-all border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-violet-500 hover:text-white">' + n + '</a>';
-        }
+          startPlayback(data.url);
+          refreshActive();
+        })
+        .catch(function (err) {
+          var fb = document.getElementById('player-fallback');
+          if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Gagal memuat stream: ' + esc(err.message || err); }
+          hideLoading();
+        });
+    }
 
-        var epList = eps.map(renderEpBtn).join('');
+    function selectEp(n) {
+      if (n === curEp) return;
+      // ganti URL hash tanpa trigger hashchange → tidak re-render halaman
+      history.replaceState(null, '', '#/watch/' + encodeURIComponent(m.id) + '?ep=' + n);
+      loadEp(n);
+      var lab = document.getElementById('ep-label');
+      if (lab) lab.textContent = 'Episode ' + n + ' of ' + eps.length;
+    }
 
-        var autoNextToggle =
-          '<label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300 font-medium">' +
-          '<input type="checkbox" id="auto-next-toggle" ' + (state.autoNext ? 'checked' : '') + ' class="sr-only peer">' +
-          '<div class="relative w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-violet-600"></div>' +
-          '<span>Auto Next</span></label>';
+    function renderEpBtn(n) {
+      var isCurrent = n === curEp;
+      var cls = isCurrent
+        ? 'flex h-10 w-10 items-center justify-center text-xs font-bold rounded-lg bg-violet-600 text-white shadow-lg shadow-violet-600/40 cursor-pointer'
+        : 'flex h-10 w-10 items-center justify-center text-xs font-bold rounded-lg transition-all border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-violet-500 hover:text-white cursor-pointer';
+      return '<button type="button" data-ep="' + n + '" class="' + cls + '">' + n + '</button>';
+    }
 
-        $('#app').innerHTML =
-          '<div class="grid xl:grid-cols-[1fr_360px] gap-8 items-start">' +
-          '<div class="space-y-4">' +
-          '<div class="bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex justify-center items-center max-h-[75vh] mx-auto w-fit min-w-[280px] relative">' +
-          '<video id="hls-player" class="max-h-[75vh] w-auto h-auto max-w-full object-contain mx-auto" controls playsinline></video>' +
-          '<div id="player-loading" class="absolute inset-0 flex items-center justify-center bg-black/60">' +
-          '<div class="animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500 h-10 w-10"></div>' +
-          '</div>' +
-          '<div id="player-fallback" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Memuat stream...</div>' +
-          '</div>' +
-          '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
-          '<span class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
-          '<div class="flex items-center gap-4">' +
-          autoNextToggle +
-          '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
-          '</div></div>' +
-          '</div>' +
-          '<div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">' +
-          '<div class="flex items-center justify-between mb-4">' +
-          '<h3 class="text-base font-bold text-white">Select Episode</h3>' +
-          (ep < eps.length ? '<a href="#/watch/' + encodeURIComponent(m.id) + '?ep=' + (ep + 1) + '" class="text-xs font-semibold text-violet-400 hover:text-violet-300">Next Ep →</a>' : '') +
-          '</div>' +
-          '<div id="episode-list" class="flex flex-wrap gap-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-1">' + epList + '</div></div>' +
-          '</div>';
+    function refreshActive() {
+      var btns = document.querySelectorAll('#episode-list button[data-ep]');
+      for (var b = 0; b < btns.length; b++) {
+        var n = parseInt(btns[b].getAttribute('data-ep'), 10);
+        btns[b].className = n === curEp
+          ? 'flex h-10 w-10 items-center justify-center text-xs font-bold rounded-lg bg-violet-600 text-white shadow-lg shadow-violet-600/40 cursor-pointer'
+          : 'flex h-10 w-10 items-center justify-center text-xs font-bold rounded-lg transition-all border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-violet-500 hover:text-white cursor-pointer';
+      }
+      var next = document.getElementById('next-ep-link');
+      if (next) next.style.display = curEp < eps.length ? '' : 'none';
+    }
 
-        // Auto Next toggle listener
-        var toggleEl = document.getElementById('auto-next-toggle');
-        if (toggleEl) {
-          toggleEl.addEventListener('change', function (e) {
-            state.autoNext = e.target.checked;
-          });
-        }
+    var epList = eps.map(renderEpBtn).join('');
 
-        var provider = (m.category || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-        var streamUrl = '/api/stream/' + encodeURIComponent(m.id) +
-          '?ep=' + ep +
-          '&provider=' + encodeURIComponent(provider) +
-          '&title=' + encodeURIComponent(m.title) +
-          '&lang=' + encodeURIComponent(state.lang);
+    var autoNextToggle =
+      '<label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300 font-medium">' +
+      '<input type="checkbox" id="auto-next-toggle" ' + (state.autoNext ? 'checked' : '') + ' class="sr-only peer">' +
+      '<div class="relative w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-violet-600"></div>' +
+      '<span>Auto Next</span></label>';
 
-        fetch(streamUrl)
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            if (!data.ok) throw new Error(data.message || 'stream not found');
-            if (data.total_eps && data.total_eps > eps.length) {
-              var more = [];
-              for (var i = eps.length + 1; i <= data.total_eps; i++) more.push(i);
-              eps = eps.concat(more);
-              var newList = eps.map(renderEpBtn).join('');
-              var el = document.getElementById('episode-list');
-              if (el) el.innerHTML = newList;
-              var epLabel = document.querySelector('#app span');
-              if (epLabel) epLabel.textContent = 'Episode ' + ep + ' of ' + eps.length;
-            }
-            var video = document.getElementById('hls-player');
-            if (!video) return;
+    $('#app').innerHTML =
+      '<div class="grid xl:grid-cols-[1fr_360px] gap-8 items-start">' +
+      '<div class="space-y-4">' +
+      '<div class="bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex justify-center items-center max-h-[75vh] mx-auto w-fit min-w-[280px] relative">' +
+      '<video id="hls-player" class="max-h-[75vh] w-auto h-auto max-w-full object-contain mx-auto" controls playsinline></video>' +
+      '<div id="player-loading" class="absolute inset-0 flex items-center justify-center bg-black/60">' +
+      '<div class="animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500 h-10 w-10"></div>' +
+      '</div>' +
+      '<div id="player-fallback" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Memuat stream...</div>' +
+      '</div>' +
+      '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
+      '<span id="ep-label" class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
+      '<div class="flex items-center gap-4">' +
+      autoNextToggle +
+      '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
+      '</div></div>' +
+      '</div>' +
+      '<div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">' +
+      '<div class="flex items-center justify-between mb-4">' +
+      '<h3 class="text-base font-bold text-white">Select Episode</h3>' +
+      '<a id="next-ep-link" data-goep="' + (ep + 1) + '" href="javascript:void(0)" class="text-xs font-semibold text-violet-400 hover:text-violet-300">Next Ep →</a>' +
+      '</div>' +
+      '<div id="episode-list" class="flex flex-wrap gap-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-1">' + epList + '</div></div>' +
+      '</div>';
 
-            // Setup ended handler for Auto Next
-            video.onended = function () {
-              if (state.autoNext && ep < eps.length) {
-                location.hash = '#/watch/' + encodeURIComponent(m.id) + '?ep=' + (ep + 1);
-              }
-            };
+    video = document.getElementById('hls-player');
 
-            if (video.canPlayType('application/vnd.apple.mpegurl')) {
-              hideLoading();
-              video.src = data.url;
-              video.play().catch(function () {});
-            } else if (window.Hls && Hls.isSupported()) {
-              var hls = new Hls();
-              hideLoading();
-              hls.loadSource(data.url);
-              hls.attachMedia(video);
-              hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                video.play().catch(function () {});
-              });
-            } else {
-              var fb = document.getElementById('player-fallback');
-              if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Browser tidak mendukung HLS.'; }
-              hideLoading();
-            }
-          })
-          .catch(function (err) {
-            var fb = document.getElementById('player-fallback');
-            if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Gagal memuat stream: ' + esc(err.message || err); }
-            hideLoading();
-          });
+    // Auto Next toggle listener
+    var toggleEl = document.getElementById('auto-next-toggle');
+    if (toggleEl) {
+      toggleEl.addEventListener('change', function (e) { state.autoNext = e.target.checked; });
+    }
+
+    // video ended → auto next (tanpa re-render)
+    video.onended = function () {
+      if (state.autoNext && curEp < eps.length) selectEp(curEp + 1);
+    };
+
+    // episode button click handler (delegasi)
+    document.getElementById('episode-list').addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-ep]');
+      if (btn) selectEp(parseInt(btn.getAttribute('data-ep'), 10));
+    });
+    var nextEl = document.getElementById('next-ep-link');
+    if (nextEl) nextEl.addEventListener('click', function () { if (curEp < eps.length) selectEp(curEp + 1); });
+
+    loadEp(ep);   // mulai episode awal
   }
-
   function parseHash() {
     var h = location.hash || '#/';
     var qs = h.indexOf('?');
