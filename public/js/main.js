@@ -133,6 +133,14 @@
       .then(function (data) {
         var providers = data.providers || [];
         var sections = data.sections || [];
+
+        // Fallback ke For You (All Providers) saat provider terpilih tak punya data
+        var anyItems = sections.some(function (s) { return (s.items || []).length > 0; });
+        if (!anyItems && sectionsCache && state.provider) {
+          sections = sectionsCache.sections || [];
+          providers = sectionsCache.providers || providers;
+        }
+
         var mainSection = sections.filter(function (s) { return s.tab_key === 'for-you'; })[0] || sections[0];
         var hasNext = mainSection ? (mainSection.items || []).length >= 5 : false;
         var pagination = {
