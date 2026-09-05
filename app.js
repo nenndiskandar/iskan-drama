@@ -356,6 +356,134 @@ app.get('/api/proxy/m3u8', async (req, res) => {
   }
 });
 
+// ------------------------------------------------------------------
+// Narto BibiShort (edge) scraper — SSR index → sections-shaped payload.
+//   GET /api/narto/index?page=1   ->  { providers, sections:[{items:[...]}] }
+//   GET /api/narto/watch/:bookId/:ep?title=<slug>  ->  { ok, url, ... }
+// ------------------------------------------------------------------
+const NARTO_BASE = process.env.TARGET_API || 'https://edge.narto-drama.com';
+// The SSR index is served from narto-drama.com while API/CDN resolves to
+// an edge host. Follow redirects and use the returned final URL for strips.
+// Note: some items (e.g. TikTok CDN short drama) use play_url as source.
+const NARTO_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
+const NARTO_AH = {
+  'User-Agent': NARTO_UA,
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'id-ID,id;q=0.9',
+};
+
+// Parse a <article class="card" ...> block from SSR HTML.
+function stripNartoTag(s) { return String(s).replace(/<\/?[^>]+(>|$)/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim(); }
+
+function nartoParseItems(html) {
+  const out = [];
+  const re = /<article[^>]*data-watch-url="([^"]+)"[^>]*>[\s\S]*?<\/article>/g;
+  let m; const seen = {};
+  while ((m = re.exec(html))) {
+    const block = m[0];
+    let url = m[1];
+    const mid = (block.match(/data-movie-id="([^"]+)"/) || [])[1] || '';
+    const poster = (block.match(/<img[^>]*src="([^"]+)"/) || [])[1] || '';
+    const rawTitle = (block.match(/data-movie-title="([^"]+)"/) || [])[1] || '';
+    const epMatch = (block.match(/class="episode-badge">\s*Ep:\s*(\d+)/i) || []);
+    const tags = Array.from(block.matchAll(/class="movie-tag[^"]*"[^>]*>\s*#([^<]+)\s*</g)).map((x) => stripNartoTag(x[1]));
+    const slug = String(url).split('/detail/watch/')[1] ? String(url).split('/detail/watch/')[1].split('?')[0] : String(url).split('/').filter(Boolean).pop() || '';
+    const key = slug || mid;
+    if (!key || seen[key]) continue;
+    seen[key] = 1;
+    out.push({
+      id: mid || slug, book_id: mid || slug, slug: slug, code: 'bibishort', provider: 'BibiShort',
+      title: stripNartoTag(rawTitle),
+      poster: (poster && /^https?:/i.test(poster)) ? poster : (poster ? NARTO_BASE + poster : ''),
+      total_eps: epMatch[1] ? parseInt(epMatch[1], 10) : null,
+      tags: tags.slice(0, 3),
+      watch_url: '/api/narto/watch/' + encodeURIComponent(mid || slug) + '/1?title=' + encodeURIComponent(slug),
+      external_url: String(url).replace(/&amp;/g, '&'),
+    });
+  }
+  return out;
+}
+
+app.get('/api/narto/index', async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page || '1', 10) || 1);
+  try {
+    const url = NARTO_BASE + '/?lang=id-ID&tab-provider=bibishort' + (page > 1 ? '&page=' + page : '');
+    const r = await axios.get(url, { timeout: 25000, maxRedirects: 5, responseType: 'text', headers: NARTO_AH });
+    const items = nartoParseItems(r.data);
+    res.json({
+      ok: true,
+      providers: [{ key: 'bibishort', label: 'BibiShort' }],
+      sections: [{ tab_key: 'for-you', tab_label: page === 1 ? 'BibiShort Indonesia' : 'BibiShort Indonesia (hal. ' + page + ')', page: page, items: items }],
+      page: page,
+    });
+  } catch (err) {
+    res.status(502).json({ ok: false, message: err.message || 'Narto index failed', code: err.code || '' });
+  }
+});
+
+// Parse a (possibly escaped) inline JSON array from the watch page. Returns { items, movieId, sourceApp }.
+function nartoParseWatchState(html) {
+  const startIdx = html.indexOf('const episodeItemsRaw = [');
+  if (startIdx < 0) return null;
+  const start = html.indexOf('[', startIdx);
+  let depth = 0;
+  let end = -1;
+  for (let k = start; k < html.length; k++) {
+    const c = html[k];
+    if (c === '[') depth++;
+    else if (c === ']') { depth--; if (depth === 0) { end = k + 1; break; } }
+  }
+  if (end < 0) return null;
+  const raw = html.slice(start, end)
+    .replace(/\\\//g, '/')
+    .replace(/\\u0026/g, '&')
+    .replace(/\\u002F/g, '/')
+    .replace(/\\u002[fF]/g, '/');
+  try {
+    const items = JSON.parse(raw);
+    const movieId = (html.match(/const movieId = (\d+)/) || [])[1] || '';
+    const sourceApp = (html.match(/const movieSourceAppName = "([^"]+)"/) || [])[1] || '';
+    return { items: items, movieId: movieId, sourceApp: sourceApp };
+  } catch (e) { return null; }
+}
+
+app.get('/api/narto/watch/:bookId/:ep', async (req, res) => {
+  const { bookId, ep } = req.params;
+  let title = String(req.query.title || '');
+  const epN = (parseInt(ep, 10) || 1);
+  try {
+    const pageUrl = NARTO_BASE + '/detail/watch/' + encodeURIComponent(title || bookId) + '/' + epN + '?lang=id-ID&from=search';
+    const r = await axios.get(pageUrl, { timeout: 25000, maxRedirects: 5, responseType: 'text', headers: NARTO_AH });
+    const state = nartoParseWatchState(r.data);
+    if (!state) return res.status(502).json({ ok: false, message: 'No watch state parsed', url: pageUrl });
+        const idx = state.items.findIndex((it) => Number(it.route_episode_number) === epN);
+            const epObj = idx >= 0 ? state.items[idx] : state.items[0];
+            const url = String(epObj.direct_play_url || epObj.play_url || '').trim();
+            if (!url) return res.status(404).json({ ok: false, message: 'No stream for ep ' + epN });
+            // TikTok-hosted sources are direct MP4 (mime_type=video_mp4 in the query) playable
+            // natively in <video> — NOT HLS. Detect the real container instead of relying on '.mp4'.
+            const lowerUrl = url.toLowerCase();
+            const isTiktokMp4 = /tiktokcdn\.com/i.test(url) && /mime_type=video_mp4/i.test(url);
+            const ext = (lowerUrl.indexOf('.m3u8') >= 0 && !isTiktokMp4) ? 'm3u8' : 'mp4';
+            // rebuilt playlists / .ts segments are relative to the cdn host
+            res.json({
+              ok: true, url: url, book_id: state.movieId || bookId,
+              ep: epN, total_eps: state.items.length,
+              movie_id: state.movieId, source_app: state.sourceApp,
+              episodes: state.items.length,
+              ext: ext,
+              episode_list: state.items.map((it) => ({
+                ep: Number(it.route_episode_number),
+                quality: '720p',
+                url: String(it.direct_play_url || it.play_url || '').trim(),
+                ext: (String(it.direct_play_url || it.play_url || '').toLowerCase().indexOf('.mp4') >= 0) ? 'mp4' : 'm3u8',
+              })),
+            });
+          } catch (err) {
+    res.status(502).json({ ok: false, message: err.message || 'Narto watch failed', code: err.code || '' });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', uptime: process.uptime(), ts: Date.now() });

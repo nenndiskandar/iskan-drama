@@ -5,10 +5,12 @@
   'use strict';
 
   var API = '/api/raw';
-  var DC_API = '/api/dc';
-  var DC_MODE = true;            // DramaboxDB (English short drama) as upstream
-  var TARGET = 'https://narto-drama.com';
-  var state = { lang: 'id-ID', provider: '', page: 1, autoNext: true, query: '', queryItems: null };
+    var DC_API = '/api/dc';
+    var DC_MODE = true;            // DramaboxDB (English short drama) as upstream
+    var NARTO_MODE = true;         // Narto BibiShort (edge) scraper as upstream
+    var NARTO_API = '/api/narto';
+    var TARGET = 'https://narto-drama.com';
+    var state = { lang: 'id-ID', provider: '', page: 1, autoNext: true, query: '', queryItems: null };
 
   function $(sel) { return document.querySelector(sel); }
 
@@ -30,14 +32,14 @@
   }
 
   function fetchJSON(path, params) {
-    var qs = params ? '?' + new URLSearchParams(params).toString() : '';
-    // path yg mulai /dc/ SUDAH nyertain 'dc' → base=/api; yg lain pake /api/raw
-    var base = path.indexOf('/dc/') === 0 ? '/api' : API;
-    return fetch(base + path + qs).then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    });
-  }
+      var qs = params ? '?' + new URLSearchParams(params).toString() : '';
+      // path yg mulai /dc/ atau /narto/ SUDAH nyertain prefix → base=/api; yg lain pake /api/raw
+      var base = (path.indexOf('/dc/') === 0 || path.indexOf('/narto/') === 0) ? '/api' : API;
+      return fetch(base + path + qs).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      });
+    }
 
   function slugOf(item) {
     var raw = item.url || item.watch_url || '';
@@ -393,7 +395,14 @@
   var sectionsCache = null;
 
   function fetchSections(params) {
-    if (DC_MODE) {
+      if (NARTO_MODE) {
+        // Narto BibiShort: sections live at /api/narto/index (scraped SSR)
+        return fetchJSON('/narto/index', { page: params['tab_pages[for-you]'] || 1 }).then(function (data) {
+          if (!params.provider && !params['tab_pages[for-you]']) sectionsCache = data;
+          return data;
+        });
+      }
+      if (DC_MODE) {
       // DramaboxDB: sections live at /api/dc/home
       return fetchJSON('/dc/home', { page: params['tab_pages[for-you]'] || 1 }).then(function (data) {
         if (!params.provider && !params['tab_pages[for-you]']) sectionsCache = data;
@@ -512,7 +521,13 @@
     var curEp = ep;         // episode aktif (tanpa re-render)
 
     function streamUrlFor(n) {
-      if (DC_MODE) {
+          if (NARTO_MODE) {
+            // Narto BibiShort: /api/narto/watch/<bookId>/<ep>?title=<slug>
+            return '/api/narto/watch/' + encodeURIComponent(m.id) +
+              '/' + n +
+              '?title=' + encodeURIComponent(m.slug || slugOf(m));
+          }
+          if (DC_MODE) {
         // DramaboxDB: /api/stream/dc/<bookId>/<ep>?title=<slug>
         return '/api/stream/dc/' + encodeURIComponent(m.id) + '/' + n +
           '?title=' + encodeURIComponent(m.slug) +
@@ -527,50 +542,108 @@
     }
 
     // setUp+load stream utk episode tertentu ke video element (tanpa full re-render)
-    function startPlayback(url) {
-      hideLoading();
-      var fb = document.getElementById('player-fallback');
-      if (fb) { fb.classList.add('hidden'); fb.classList.remove('flex'); }
-      // DramaboxDB returns pre-signed m3u8 → use hls.js (not direct video src).
-      if (window.Hls && Hls.isSupported()) {
-        var hls = new Hls({
-          xhrSetup: function (xhr) {
-            // dramaboxdb signed m3u8/segmen butuh Referer = parent site
-            xhr.setRequestHeader('Referer', 'https://www.dramaboxdb.com/');
-            xhr.setRequestHeader('Origin', 'https://www.dramaboxdb.com');
+        function startPlayback(url, extHint) {
+                          hideLoading();
+                          var fb = document.getElementById('player-fallback');
+                          if (fb) { fb.classList.add('hidden'); fb.classList.remove('flex'); }
+                          var isMp4 = String(extHint || '').toLowerCase() === 'mp4' ||
+                                      (extHint !== 'm3u8' && (url.toLowerCase().indexOf('mime_type=video_mp4') >= 0 || url.toLowerCase().endsWith('.mp4')));
+                          // play via Plyr kalau ada, fallback native
+                          function playVideo() {
+                            if (window.__plyr) { try { window.__plyr.play().catch(function () {}); } catch (e) { video.play().catch(function () {}); } }
+                            else { video.play().catch(function () {}); }
+                          }
+                  // Badge sumber + resolusi (di bawah player)
+                                      var badge = document.getElementById('player-source-badge');
+                                      var resBadge = document.getElementById('player-res-badge');
+                                      if (badge) {
+                                        var isTiktok = /tiktokcdn\.com/i.test(url);
+                                        badge.textContent = isMp4 ? 'MP4' : 'HLS';
+                                        badge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide ' +
+                                          (isMp4
+                                            ? (isTiktok ? 'bg-emerald-500/90 text-black' : 'bg-sky-500/90 text-black')
+                                            : 'bg-violet-500/90 text-white');
+                                        badge.classList.remove('hidden');
+                                        badge.title = isMp4 ? (isTiktok ? 'Sumber: TikTok CDN (MP4 langsung)' : 'Sumber: MP4 langsung') : 'Sumber: HLS (.m3u8)';
+                                      }
+                                      if (resBadge) {
+                                        resBadge.textContent = 'Res: —';
+                                        resBadge.classList.remove('hidden');
+                                        // isi setelah metadata video terbaca
+                                        video.addEventListener('loadedmetadata', function h() {
+                                                                                  if (video.videoWidth && resBadge) {
+                                                                                    resBadge.textContent = 'Res: ' + video.videoWidth + '×' + video.videoHeight;
+                                                                                    resBadge.classList.remove('hidden');
+                                                                                  }
+                                                                                  video.removeEventListener('loadedmetadata', h);
+                                                                                });
+                                                                              }
+                                                          // Destroy HLS instance lama agar tidak ganggu playback baru
+          if (window.__hlsLast && window.__hlsLast.destroy) {
+            try { window.__hlsLast.destroy(); } catch (e) {}
+            window.__hlsLast = null;
           }
-        });
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, function () { video.play().catch(function () {}); });
-      } else if (url && url.toLowerCase().endsWith('.mp4')) {
-        video.src = url; video.play().catch(function () {});
-      } else if (url.toLowerCase().endsWith('.mp4')) {
-        video.src = url; video.play().catch(function () {});
-      } else {
-        if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Browser tidak mendukung HLS.'; }
-        hideLoading();
-      }
-    }
+          video.removeAttribute('src');
+          // native MP4 (incl. TikTok CDN) → set video.src langsung. Media tanpa CORS
+          // tetap bisa diputar; gunakan no-referrer supaya CDN yg blok Referer jalan.
+          if (isMp4) {
+                      video.setAttribute('referrerpolicy', 'no-referrer');
+                      try { video.crossOrigin = null; } catch (e) {}
+                      video.src = url;
+                      playVideo();
+                      return;
+                    }
+          // HLS .m3u8 → hls.js
+          if (window.Hls && Hls.isSupported()) {
+            var isNartoHost = /(^|\.)(narto-drama\.com(:|$))/i.test(url) || /(^|\.)edge\.narto-drama\.com(:|$)/i.test(url) || /(^|\.)cdn\.narto-drama\.com(:|$)/i.test(url);
+            var hls = new Hls({
+              xhrSetup: function (xhr) {
+                if (isNartoHost) {
+                  xhr.setRequestHeader('Referer', 'https://edge.narto-drama.com/');
+                  xhr.setRequestHeader('Origin', 'https://edge.narto-drama.com');
+                } else {
+                  // external CDN (mis. vigloo/shortmax) — Referer kosong
+                  xhr.setRequestHeader('Referer', '');
+                }
+              }
+            });
+            hls.loadSource(url);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, function () { playVideo(); });
+                        window.__hlsLast = hls;
+                      } else if (url.toLowerCase().indexOf('mime_type=video_mp4') >= 0 || url.toLowerCase().endsWith('.mp4')) {
+                        video.src = url; playVideo();
+                      } else {
+            if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Browser tidak mendukung HLS.'; }
+            hideLoading();
+          }
+        }
 
     // panggil /api/stream lalu mulai playback utk episode n
-    function loadEp(n) {
-      curEp = n;
-      hideLoading();
-      fetch(streamUrlFor(n))
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (!data.ok) throw new Error(data.message || 'stream not found');
-          if (data.total_eps && data.total_eps > eps.length) {
-            for (var k = eps.length + 1; k <= data.total_eps; k++) eps.push(k);
-            var el = document.getElementById('episode-list');
-            if (el) el.innerHTML = eps.map(renderEpBtn).join('');
-            var lab = document.querySelector('#app #ep-label');
-            if (lab) lab.textContent = 'Episode ' + curEp + ' of ' + eps.length;
+        function loadEp(n) {
+          curEp = n;
+          hideLoading();
+          // HLS instance lama harus di-destroy sebelum ganti sumber — kalau tidak,
+          // hls.js keep buffering source lama & player stuck.
+          if (window.__hlsLast && window.__hlsLast.destroy) {
+            try { window.__hlsLast.destroy(); } catch (e) {}
+            window.__hlsLast = null;
           }
-          startPlayback(data.url);
-          refreshActive();
-        })
+          video.removeAttribute('src');
+          fetch(streamUrlFor(n))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (!data.ok) throw new Error(data.message || 'stream not found');
+              if (data.total_eps && data.total_eps > eps.length) {
+                for (var k = eps.length + 1; k <= data.total_eps; k++) eps.push(k);
+                var el = document.getElementById('episode-list');
+                if (el) el.innerHTML = eps.map(renderEpBtn).join('');
+                var lab = document.querySelector('#app #ep-label');
+                if (lab) lab.textContent = 'Episode ' + curEp + ' of ' + eps.length;
+              }
+              startPlayback(data.url, data.ext);
+                            refreshActive();
+            })
         .catch(function (err) {
           var fb = document.getElementById('player-fallback');
           if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Gagal memuat stream: ' + esc(err.message || err); }
@@ -619,18 +692,23 @@
       '<div class="grid xl:grid-cols-[1fr_360px] gap-8 items-start">' +
       '<div class="space-y-4">' +
       '<div class="bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex justify-center items-center max-h-[75vh] mx-auto w-fit min-w-[280px] relative">' +
-      '<video id="hls-player" class="max-h-[75vh] w-auto h-auto max-w-full object-contain mx-auto" controls playsinline></video>' +
-      '<div id="player-loading" class="absolute inset-0 flex items-center justify-center bg-black/60">' +
-      '<div class="animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500 h-10 w-10"></div>' +
-      '</div>' +
-      '<div id="player-fallback" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Memuat stream...</div>' +
-      '</div>' +
-      '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
-      '<span id="ep-label" class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
-      '<div class="flex items-center gap-4">' +
-      autoNextToggle +
-      '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
-      '</div></div>' +
+            '<video id="hls-player" class="max-h-[75vh] w-auto h-auto max-w-full object-contain mx-auto" controls playsinline></video>' +
+            '<div id="player-loading" class="absolute inset-0 flex items-center justify-center bg-black/60">' +
+            '<div class="animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500 h-10 w-10"></div>' +
+            '</div>' +
+            '<div id="player-fallback" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Memuat stream...</div>' +
+            '</div>' +
+            '<div class="space-y-2">' +
+                  '<div class="flex items-center justify-center gap-2 text-sm text-slate-400">' +
+                  '<div id="player-source-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-700/80 text-slate-200">—</div>' +
+                  '<span id="player-res-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-700/80 text-slate-200">—</span>' +
+                  '</div>' +
+                  '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
+                  '<span id="ep-label" class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
+                  '<div class="flex items-center gap-4">' +
+                  autoNextToggle +
+                  '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
+                  '</div></div></div>' +
       '</div>' +
       '<div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">' +
       '<div class="flex items-center justify-between mb-4">' +
@@ -641,6 +719,22 @@
       '</div>';
 
     video = document.getElementById('hls-player');
+
+    // Plyr: upgrade <video> jadi player skin (fallback native kalau CDN gagal)
+        if (window.__plyr && window.__plyr.destroy) { try { window.__plyr.destroy(); } catch (e) {} window.__plyr = null; }
+        function initPlyr() {
+          if (window.Plyr) {
+            try { window.__plyr = new Plyr(video, { autoplay: false, playsinline: true }); } catch (e) { window.__plyr = null; }
+          } else { window.__plyr = null; }
+        }
+        initPlyr();
+        // fallback: kalau Plyr belum load (CDN lambat/gagal), ambil dari cdnjs lalu init
+        if (!window.__plyr) {
+          var ps = document.createElement('script');
+          ps.src = 'https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js';
+          ps.onload = function () { initPlyr(); };
+          document.head.appendChild(ps);
+        }
 
     // Auto Next toggle listener
     var toggleEl = document.getElementById('auto-next-toggle');
