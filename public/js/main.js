@@ -6,7 +6,7 @@
 
   var API = '/api/raw';
     var DC_API = '/api/dc';
-    var DC_MODE = true;            // DramaboxDB (English short drama) as upstream
+    var DC_MODE = false;            // DramaboxDB (English short drama) as upstream
     var NARTO_MODE = true;         // Narto BibiShort (edge) scraper as upstream
     var NARTO_API = '/api/narto';
     var TARGET = 'https://narto-drama.com';
