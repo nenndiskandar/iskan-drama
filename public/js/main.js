@@ -7,9 +7,9 @@
   var API = '/api/raw';
     var DC_API = '/api/dc';
     var DC_MODE = false;            // DramaboxDB (English short drama) as upstream
-    var NARTO_MODE = true;         // Narto BibiShort (edge) scraper as upstream
+    var NARTO_MODE = false;         // Narto BibiShort (edge) scraper as upstream
     var NARTO_API = '/api/narto';
-    var TARGET = 'https://narto-drama.com';
+    var TARGET = 'https://edge.narto-drama.com';
     var state = { lang: 'id-ID', provider: '', page: 1, autoNext: true, query: '', queryItems: null };
 
   function $(sel) { return document.querySelector(sel); }
