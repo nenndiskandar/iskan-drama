@@ -5,6 +5,8 @@
   'use strict';
 
   var API = '/api/raw';
+  var DC_API = '/api/dc';
+  var DC_MODE = true;            // DramaboxDB (English short drama) as upstream
   var TARGET = 'https://narto-drama.com';
   var state = { lang: 'id-ID', provider: '', page: 1, autoNext: true, query: '', queryItems: null };
 
@@ -29,7 +31,9 @@
 
   function fetchJSON(path, params) {
     var qs = params ? '?' + new URLSearchParams(params).toString() : '';
-    return fetch(API + path + qs).then(function (r) {
+    // path yg mulai /dc/ SUDAH nyertain 'dc' → base=/api; yg lain pake /api/raw
+    var base = path.indexOf('/dc/') === 0 ? '/api' : API;
+    return fetch(base + path + qs).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     });
@@ -47,16 +51,18 @@
     return {
       id: String(item.book_id || item.id || ''),
       book_id: String(item.book_id || ''),
-      slug: slugOf(item),
+      slug: item.slug || slugOf(item),
+      code: item.code || '',
+      provider_label: item.provider || '',
       title: item.title || '',
       description: item.description || '',
-      poster: abs(item.poster_url) || '/images/fallback.png',
+      poster: item.poster || item.poster_url ? abs(item.poster || item.poster_url) : (item.cover ? abs(item.cover) : ''),
       tags: item.tag_names || item.tags || [],
-      category: item.category_name || '',
-      episodes: typeof item.episode_count !== 'undefined' ? item.episode_count : null,
+      category: (item.code ? item.provider || item.code.toUpperCase() : '') || item.category_name || '',
+      episodes: typeof item.episode_count !== 'undefined' ? item.episode_count : (item.total_eps != null ? item.total_eps : null),
       source_type: item.source_type || '',
-      external_url: abs(item.watch_url) || abs(item.url) || '',
-      provider: tabLabel || item.category_name || item.source_type || '',
+      external_url: abs(item.external_url) || abs(item.watch_url) || abs(item.url) || '',
+      provider: tabLabel || item.provider || item.category_name || item.source_type || '',
       is_adult: !!item.is_adult,
     };
   }
@@ -80,8 +86,8 @@
   // Transmit Card Component
   // ===================================================================
   function movieCard(m) {
-    var epBadge = m.episodes
-      ? '<span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">' + m.episodes + ' ep</span>'
+    var epBadge = (m.episodes || m.total_eps)
+      ? '<span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">' + (m.episodes || m.total_eps) + ' ep</span>'
       : '';
 
 
@@ -165,7 +171,7 @@
         }
 
         var mainSection = sections.filter(function (s) { return s.tab_key === 'for-you'; })[0] || sections[0];
-        var hasNext = mainSection ? (mainSection.items || []).length >= 5 : false;
+        var hasNext = DC_MODE ? false : (mainSection ? (mainSection.items || []).length >= 5 : false);
         var pagination = {
           current: state.page,
           total: hasNext ? state.page + 5 : state.page,
@@ -241,7 +247,12 @@
         // Build content: pisah per seksi dengan judul label (seperti trending)
         function sectionBlock(s) {
           var label = s.tab_label || s.tab_key || '';
-          var items = (s.items || []).map(function (i) { return norm(i, s.tab_label); });
+          var allItems = (s.items || []);
+          // Dracinema provider tabs filter client-side by provider code.
+          if (DC_MODE && state.provider) {
+            allItems = allItems.filter(function (i) { return String(i.code || '').toLowerCase() === state.provider; });
+          }
+          var items = allItems.map(function (i) { return norm(i, s.tab_label); });
           if (!items.length) return '';
           var head = label
             ? '<div class="flex items-center gap-2 mb-4 mt-2"><span class="h-5 w-1 rounded-full bg-violet-500"></span>' +
@@ -290,20 +301,26 @@
           }
 
           if (val.trim()) {
-            fetchJSON('/search', { q: val.trim(), provider: state.provider, lang: state.lang })
-              .then(function (res) {
-                state.queryItems = (res.items || res.data || []).map(function (item) { return norm(item); });
-                var updatedGrid = state.queryItems.length
-                  ? '<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4 w-full">' +
-                    state.queryItems.map(movieCard).join('') + '</div>'
-                  : '<div class="text-center py-16"><img src="/images/empty.png" alt="" class="mx-auto h-24 opacity-30">' +
-                    '<p class="mt-4 text-slate-400">Tidak ada drama "' + esc(val) + '" ditemukan.</p></div>';
-                if (gc) gc.innerHTML = updatedGrid;
-              })
-              .catch(function () {
-                state.queryItems = [];
-                if (gc) gc.innerHTML = '<div class="text-center py-16 text-slate-400">Gagal memuat pencarian.</div>';
-              });
+            // Client-side search filter over loaded sections (instant, no API call)
+            var allItems = [];
+            var sections = sectionsCache ? sectionsCache.sections : [];
+            for (var s = 0; s < sections.length; s++) {
+              var items = sections[s].items || [];
+              for (var i = 0; i < items.length; i++) {
+                allItems.push(norm(items[i], sections[s].tab_label));
+              }
+            }
+            var q = val.trim().toLowerCase();
+            state.queryItems = allItems.filter(function (item) {
+              return (item.title || '').toLowerCase().indexOf(q) >= 0 ||
+                     (item.description || '').toLowerCase().indexOf(q) >= 0;
+            });
+            var updatedGrid = state.queryItems.length
+              ? '<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4 w-full">' +
+                state.queryItems.map(movieCard).join('') + '</div>'
+              : '<div class="text-center py-16"><img src="/images/empty.png" alt="" class="mx-auto h-24 opacity-30">' +
+                '<p class="mt-4 text-slate-400">Tidak ada drama "' + esc(val) + '" ditemukan.</p></div>';
+            if (gc) gc.innerHTML = updatedGrid;
           } else {
             state.queryItems = null;
             fetchSections({ lang: state.lang, provider: state.provider, 'tab_pages[for-you]': 1 })
@@ -376,6 +393,13 @@
   var sectionsCache = null;
 
   function fetchSections(params) {
+    if (DC_MODE) {
+      // DramaboxDB: sections live at /api/dc/home
+      return fetchJSON('/dc/home', { page: params['tab_pages[for-you]'] || 1 }).then(function (data) {
+        if (!params.provider && !params['tab_pages[for-you]']) sectionsCache = data;
+        return data;
+      });
+    }
     return fetchJSON('/home/providers/sections', params).then(function (data) {
       if (!params.provider && !params['tab_pages[for-you]']) sectionsCache = data;
       return data;
@@ -399,7 +423,16 @@
       }
       return fetchJSON('/search', { q: id, limit: 5, lang: state.lang }).then(function (res) {
         if (res.ok && res.items && res.items.length) return norm(res.items[0]);
-        throw new Error('not found');
+        // Not found — return fallback object instead of throwing
+        return {
+          id: id,
+          title: 'Drama Tidak Ditemukan',
+          description: 'Drama ini tidak tersedia di katalog Indonesia saat ini.',
+          poster: '',
+          episodes: 0,
+          total_eps: 0,
+          external_url: '',
+        };
       });
     });
   }
@@ -408,6 +441,19 @@
     showSpinner();
     findMovie(decodeURIComponent(id))
       .then(function (m) {
+        // Handle not found (episodes=0 from fallback)
+        if (!m.episodes || m.episodes === 0) {
+          $('#app').innerHTML =
+            '<div class="flex flex-col items-center justify-center py-20 text-center">' +
+            '<div class="text-6xl mb-4">🎭</div>' +
+            '<h1 class="text-2xl font-bold text-white mb-2">' + esc(m.title) + '</h1>' +
+            '<p class="text-slate-400 mb-6 max-w-md">' + esc(m.description) + '</p>' +
+            '<a href="#/" class="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl transition-all">' +
+            '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg> Kembali ke Daftar Drama</a>' +
+            '</div>';
+          hideLoading();
+          return;
+        }
         var poster =
           m.poster && m.poster !== '/images/fallback.png'
             ? '<img src="' + esc(m.poster) + '" alt="' + esc(m.title) + '" class="w-full rounded-2xl border border-slate-800 shadow-2xl object-cover aspect-[2/3]">'
@@ -466,6 +512,12 @@
     var curEp = ep;         // episode aktif (tanpa re-render)
 
     function streamUrlFor(n) {
+      if (DC_MODE) {
+        // DramaboxDB: /api/stream/dc/<bookId>/<ep>?title=<slug>
+        return '/api/stream/dc/' + encodeURIComponent(m.id) + '/' + n +
+          '?title=' + encodeURIComponent(m.slug) +
+          '&lang=' + encodeURIComponent(state.lang);
+      }
       var provider = (m.category || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
       return '/api/stream/' + encodeURIComponent(m.id) +
         '?ep=' + n +
@@ -479,13 +531,22 @@
       hideLoading();
       var fb = document.getElementById('player-fallback');
       if (fb) { fb.classList.add('hidden'); fb.classList.remove('flex'); }
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = url; video.play().catch(function () {});
-      } else if (window.Hls && Hls.isSupported()) {
-        var hls = new Hls();
+      // DramaboxDB returns pre-signed m3u8 → use hls.js (not direct video src).
+      if (window.Hls && Hls.isSupported()) {
+        var hls = new Hls({
+          xhrSetup: function (xhr) {
+            // dramaboxdb signed m3u8/segmen butuh Referer = parent site
+            xhr.setRequestHeader('Referer', 'https://www.dramaboxdb.com/');
+            xhr.setRequestHeader('Origin', 'https://www.dramaboxdb.com');
+          }
+        });
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, function () { video.play().catch(function () {}); });
+      } else if (url && url.toLowerCase().endsWith('.mp4')) {
+        video.src = url; video.play().catch(function () {});
+      } else if (url.toLowerCase().endsWith('.mp4')) {
+        video.src = url; video.play().catch(function () {});
       } else {
         if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Browser tidak mendukung HLS.'; }
         hideLoading();

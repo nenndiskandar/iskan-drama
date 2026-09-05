@@ -5,7 +5,7 @@ const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
-const TARGET_API = process.env.TARGET_API || 'https://narto-drama.com';
+const TARGET_API = process.env.TARGET_API || 'https://edge.narto-drama.com';
 const TIMEOUT_MS = parseInt(process.env.API_TIMEOUT_MS || '45000', 10);
 
 app.use(express.json({ limit: '1mb' }));
@@ -178,6 +178,140 @@ app.get('/api/stream/:bookId', async (req, res) => {
   }
 });
 
+// ------------------------------------------------------------------
+// DramaboxDB stream resolver — dramaboxdb.com aggregator.
+//   GET /api/stream/dc/:bookId/:ep?title=<slug>
+// Detail page https://www.dramaboxdb.com/in/movie/<bookId>/<slug> embeds
+// pre-signed m3u8 (hwzthls.dramaboxdb.com, no auth/referer needed).
+// Robust server-side: no CF throttle. Returns m3u8 + 540/720/1080p renditions.
+// ------------------------------------------------------------------
+const DC_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36';
+
+app.get('/api/stream/dc/:bookId/:ep', async (req, res) => {
+  const { bookId, ep } = req.params;
+  const slug = String(req.query.title || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!slug) return res.status(400).json({ ok: false, message: 'Missing title slug' });
+  const detailUrl = `https://www.dramaboxdb.com/in/movie/${encodeURIComponent(bookId)}/${encodeURIComponent(slug)}`;
+  try {
+    const r = await axios.get(detailUrl, {
+      timeout: 25000, maxRedirects: 3, responseType: 'text',
+      headers: { 'User-Agent': DC_UA, 'Accept-Language': 'id-ID,id;q=0.9' },
+    });
+    const next = parseNextData(r.data);
+    if (!next) return res.status(502).json({ ok: false, message: 'No Next.js data block on detail page', detailUrl: detailUrl });
+    const p = (next.props && next.props.pageProps) || {};
+    const bookInfo = p.bookInfo || {};
+    const chapters = (p.chapterList || []);
+    // chapterNumber is 1-based; ep is 1-based. Chapters are sorted ascending by index.
+    const epIdx = (parseInt(ep, 10) || 1) - 1;
+    const total_eps = parseInt(bookInfo.chapterCount || chapters.length || 0, 10);
+    const poster = bookInfo.cover || '';
+    // Build a stream entry per chapter (each has its own pre-signed m3u8).
+    const streams = chapters.map(function (c) {
+      const u = c.m3u8Url || c.mp4 || '';
+      return { ep: parseInt(c.indexStr, 10) || (c.index + 1), quality: '720p', url: u, ext: u && u.toLowerCase().indexOf('.mp4') >= 0 ? 'mp4' : 'm3u8' };
+    }).filter(function (s) { return !!s.url; });
+    // Pick m3u8 for this episode. If missing, fall back to first mp4/m3u8 on page.
+    let m3u8 = '';
+    if (chapters[epIdx] && (chapters[epIdx].m3u8Url || chapters[epIdx].mp4)) {
+      m3u8 = chapters[epIdx].m3u8Url || chapters[epIdx].mp4;
+    }
+    if (!m3u8) {
+      // fallback: regex scan the raw HTML for the first m3u8/mp4
+      const html = r.data; const re = /https?:\/\/[^"'\s]+\.(?:m3u8|mp4)[^"'\s]*/g; let mt;
+      while ((mt = re.exec(html))) { const u = mt[0].replace(/\\u002[Ff]/g, '/').replace(/\\u0026/g, '&'); if (u) { m3u8 = u; break; } }
+    }
+    if (!m3u8) return res.status(404).json({ ok: false, message: 'No stream URL found in detail page', detailUrl: detailUrl });
+    const cleaned = m3u8.replace(/\\\\u002F/g, '/').replace(/\\\\u0026/g, '&');
+        const ext = cleaned.toLowerCase().indexOf('.mp4') >= 0 ? 'mp4' : 'm3u8';
+        const synopsis = bookInfo.introduction || '';
+        res.json({
+          ok: true, url: cleaned, m3u8: cleaned,
+          detail_url: detailUrl, ep: parseInt(ep, 10) || 1,
+          total_eps: total_eps, poster: poster, cover: poster,
+          episodes: total_eps || streams.length, episode_list: streams, streams: streams,
+          ext: ext, lang: bookInfo.simpleLanguage || 'id', synopsis: synopsis,
+        });
+  } catch (err) {
+    res.status(502).json({ ok: false, message: err.message || 'DramaboxDB resolve failed', code: err.code || '' });
+  }
+});
+
+// Parse Next.js __NEXT_DATA__ block (HTML-escaped JSON) into an object.
+function parseNextData(html) {
+  const block = (typeof html === 'string') ? html.match(/<script id="__NEXT_DATA__"[^>]*>(.*?)<\/script>/) : null;
+  if (!block) return null;
+  try {
+    let raw = block[1];
+    raw = raw.replace(/"/g, '"').replace(/&#91;/g, '[').replace(/&#93;/g, ']').replace(/&/g, '&');
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+
+// ------------------------------------------------------------------
+// DramaboxDB homepage scraper — returns a sections-shaped payload the
+// frontend reuses for the grid. Scrapes https://www.dramaboxdb.com/ for
+// /movie/<bookId>/<slug> links.
+//   GET /api/dc/home?page=
+// ------------------------------------------------------------------
+const DC_PROVIDERS = { dramabox: 'DramaBox' };
+
+app.get('/api/dc/home', async (req, res) => {
+  const page = parseInt(req.query.page || '1', 10) || 1;
+  try {
+    const r = await axios.get('https://www.dramaboxdb.com/in/', {
+      timeout: 25000, responseType: 'text', maxRedirects: 3,
+      headers: { 'User-Agent': DC_UA, 'Accept-Language': 'id-ID,id;q=0.9' },
+    });
+    const html = r.data;
+    // Scrape /in/movie/<bookId>/<slug> hrefs from Indonesian homepage SSR.
+    const movies = [];
+    const re = /href="(\/in\/movie\/(\d+)\/([a-z0-9-]+))"/g;
+    let m; const seen = {};
+    while ((m = re.exec(html))) {
+      const key = m[2] + ':' + m[3];
+      if (seen[key]) continue;
+      seen[key] = 1;
+      movies.push({ id: m[2], slug: m[3] });
+    }
+    // Parallel-fetch each detail page's __NEXT_DATA__ for cover + chapterCount + Indonesian title.
+    // dramaboxdb /in/ is CF-clean; fetches are fast (~0.2s for 12 items).
+    await Promise.all(movies.map(async (mo) => {
+      const url = 'https://www.dramaboxdb.com/in/movie/' + encodeURIComponent(mo.id) + '/' + encodeURIComponent(mo.slug);
+      try {
+        const d = await axios.get(url, { timeout: 20000, maxRedirects: 3, responseType: 'text', headers: { 'User-Agent': DC_UA } });
+        const next = parseNextData(d.data);
+        const bi = (next && next.props && next.props.pageProps && next.props.pageProps.bookInfo) || {};
+        if (bi.cover) mo.cover = bi.cover;
+        if (bi.chapterCount) mo.total_eps = parseInt(bi.chapterCount, 10);
+        if (bi.bookName) mo.title_id = bi.bookName;
+        if (bi.introduction) mo.synopsis = bi.introduction;
+      } catch (e) { /* ignore missing cover; fallback handled in frontend */ }
+    }));
+    const items = movies.map(function (mo) {
+      // Prefer the Indonesian title (bookName) from detail; fallback to slug-derived.
+      var titleDisplay = mo.title_id || mo.slug.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+      return Object.assign({}, mo, {
+        id: mo.id, book_id: mo.id, slug: mo.slug, code: 'dramabox', provider: 'DramaBox',
+        title: titleDisplay, title_id: mo.title_id || '',
+        poster: mo.cover || '',
+        total_eps: mo.total_eps || 0,
+        synopsis: mo.synopsis || '',
+        watch_url: '/api/stream/dc/' + encodeURIComponent(mo.id) + '/1?title=' + encodeURIComponent(mo.slug),
+        external_url: 'https://www.dramaboxdb.com/in/movie/' + encodeURIComponent(mo.id) + '/' + encodeURIComponent(mo.slug),
+      });
+    });
+    res.json({
+      ok: true,
+      providers: Object.keys(DC_PROVIDERS).map(function (k) { return { key: k, label: DC_PROVIDERS[k] }; }),
+      sections: [{ tab_key: 'for-you', tab_label: 'DramaBox Indonesia', items: items }],
+      page: page,
+    });
+  } catch (err) {
+    res.status(502).json({ ok: false, message: err.message || 'DramaboxDB home failed', code: err.code || '' });
+  }
+});
+
 // M3U8 proxy — fetch video manifest/segments through the server with a
 // browser User-Agent + referer so CDN hotlink/referer checks pass. Query:
 //   /api/proxy/m3u8?url=<encoded>
@@ -191,12 +325,15 @@ app.get('/api/proxy/m3u8', async (req, res) => {
     return res.status(400).json({ ok: false, message: 'Missing url' });
   }
   try {
+    const tgt = new URL(target);
+    // dramaboxdb signed m3u8/segment needs Referer = parent site origin, not the CDN origin.
+    const referer = /dramaboxdb\.com$/.test(tgt.hostname.replace(/^www\./, '')) || tgt.hostname === 'hwzthls.dramaboxdb.com' ? 'https://www.dramaboxdb.com/' : (tgt.origin + '/');
     const upstream = await axios.request({
       method: 'GET', url: target, timeout: 30000, responseType: 'stream',
       headers: {
         'User-Agent': BROWSER_UA,
-        'Referer': target,
-        'Origin': new URL(target).origin,
+        'Referer': referer,
+        'Origin': 'https://www.dramaboxdb.com',
         'Accept': '*/*',
       },
     });
