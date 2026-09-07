@@ -389,8 +389,13 @@ function nartoParseItems(html) {
     const tags = Array.from(block.matchAll(/class="movie-tag[^"]*"[^>]*>\s*#([^<]+)\s*</g)).map((x) => stripNartoTag(x[1]));
     const slug = String(url).split('/detail/watch/')[1] ? String(url).split('/detail/watch/')[1].split('?')[0] : String(url).split('/').filter(Boolean).pop() || '';
     const key = slug || mid;
-    if (!key || seen[key]) continue;
-    seen[key] = 1;
+        if (!key || seen[key]) continue;
+        // Buang item junk: id/slug yang bukan identitas bersih (template string JS yang bocor
+        // dari upstream — mis. `"' + escapeHtml(watchUrl) + '"`) atau tanpa judul.
+        const junkRe = /[+'"\\]|escapeHtml|undefined|null|\$\{/i;
+        if (junkRe.test(key) || junkRe.test(mid) || junkRe.test(rawTitle)) continue;
+        if (!mid && !slug) continue;
+        seen[key] = 1;
     out.push({
       id: mid || slug, book_id: mid || slug, slug: slug, code: 'bibishort', provider: 'BibiShort',
       title: stripNartoTag(rawTitle),

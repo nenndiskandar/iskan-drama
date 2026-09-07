@@ -10,7 +10,7 @@
     var NARTO_MODE = true;         // Narto BibiShort (edge) scraper as upstream
     var NARTO_API = '/api/narto';
     var TARGET = 'https://edge.narto-drama.com';
-    var state = { lang: 'id-ID', provider: '', page: 1, autoNext: true, query: '', queryItems: null };
+    var state = { lang: 'id-ID', provider: '', page: 1, autoNext: true, query: '', queryItems: null, itemsById: {} };
 
   function $(sel) { return document.querySelector(sel); }
 
@@ -26,10 +26,10 @@
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // Buang penanda "(Disulihsuarakan)" dari judul (dipakai utk tampilan card & detail)
-    function cleanTitle(t) {
-      return String(t == null ? '' : t).replace(/\s*\(disulihsuarakan\)\s*/gi, '').trim();
-    }
+    // Buang penanda "(Disulihsuarakan)" dan "(Dub)" dari judul (dipakai utk tampilan card & detail)
+        function cleanTitle(t) {
+          return String(t == null ? '' : t).replace(/\s*\((disulihsuarakan|dub)\)\s*/gi, '').trim();
+        }
 
   function hideLoading() {
     var el = document.getElementById('player-loading');
@@ -94,9 +94,9 @@
   // ===================================================================
   function movieCard(m) {
       var rawTitle = m.title || '';
-      // Judul berpenanda sulih suara → badge "dubbing", penanda "(Disulihsuarakan)" dibuang dari teks
-      var isDub = /\(disulihsuarakan\)/i.test(rawTitle);
-      var displayTitle = isDub ? rawTitle.replace(/\s*\(disulihsuarakan\)\s*/gi, '').trim() : rawTitle;
+            // Judul berpenanda sulih suara → badge "dubbing", penanda "(Disulihsuarakan)"/"(Dub)" dibuang dari teks
+            var isDub = /\((disulihsuarakan|dub)\)/i.test(rawTitle);
+            var displayTitle = isDub ? cleanTitle(rawTitle) : rawTitle;
       var dubbingBadge = isDub
         ? '<span class="absolute top-1.5 left-1.5 rounded bg-violet-600/90 px-1 py-0.5 text-[9px] font-semibold text-white">dubbing</span>'
         : '';
@@ -130,7 +130,7 @@
   }
 
   function paginationHTML(p) {
-    if (!p || p.total <= 1) return '';
+      if (!p || !p.total || p.total <= 1) return '';
 
     function link(page, label, cls) {
       var url = '#/?page=' + page + (state.provider ? '&provider=' + encodeURIComponent(state.provider) : '');
@@ -143,32 +143,45 @@
     }
 
     var total = p.total, cur = p.current;
-    var MAX = 8; // window lebarnya maks 8 tombol angka
-    var html = '';
+        var html = '';
 
-    // prev
-    html += cur > 1 ? link(cur - 1, '‹', 'flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-violet-500') : '';
+        // prev
+        html += cur > 1 ? link(cur - 1, '‹', 'flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-violet-500') : '';
 
-    var start = Math.max(1, cur - 3);
-    var end = Math.min(total, start + MAX - 1);
-    start = Math.max(1, end - MAX + 1);
+        // halaman pertama selalu tampil
+        html += link(1, '1', numCls(1));
 
-    if (start > 1) html += link(1, '1', numCls(1)) + '<span class="text-slate-600 px-1">…</span>';
-    for (var i = start; i <= end; i++) html += link(i, String(i), numCls(i));
-    if (end < total) html += '<span class="text-slate-600 px-1">…</span>' + link(total, String(total), numCls(total));
+        // window tengah: cur-1 .. cur+2 (maks 4 angka), tanpa pin halaman terakhir
+        var wStart = Math.max(2, cur - 1);
+        var wEnd = Math.min(total, cur + 2);
+        if (wStart > wEnd) { wStart = -1; wEnd = -1; }
 
-    // next
-    html += cur < total ? link(cur + 1, '›', 'flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-violet-500') : '';
+        if (wStart > 2) html += '<span class="text-slate-600 px-1">…</span>';
+        for (var i = wStart; i <= wEnd && i >= 2; i++) html += link(i, String(i), numCls(i));
 
-    return '<div class="flex items-center justify-center flex-wrap gap-2 mt-10">' + html + '</div>';
+        // next
+        html += cur < total ? link(cur + 1, '›', 'flex h-9 w-9 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-violet-500') : '';
+
+        return '<div class="flex items-center justify-center flex-wrap gap-2 mt-10">' + html + '</div>';
   }
 
   // ===================================================================
   // Views
   // ===================================================================
   function renderHome() {
-    showSpinner();
-    var params = { lang: state.lang };
+      var gc = document.getElementById('grid-container');
+      if (gc) {
+        // Sudah ada skeleton (hero/tabs/search) → loading cukup di grid-container saja
+        gc.innerHTML =
+          '<div class="flex items-center justify-center py-20 w-full">' +
+          '<div class="flex flex-col items-center gap-3">' +
+          '<div class="h-10 w-10 animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500"></div>' +
+          '<span class="text-xs font-medium text-slate-400 animate-pulse">Memuat drama...</span>' +
+          '</div></div>';
+      } else {
+        showSpinner();
+      }
+      var params = { lang: state.lang };
     if (state.provider) params.provider = state.provider;
     if (state.page > 1) params['tab_pages[for-you]'] = state.page;
 
@@ -221,19 +234,15 @@
                 }
 
         // Provider Tabs Horizontal Scrollable Layout (Extra Horizontal Padding)
-        var allTabActive = !state.provider;
-        var providerTabs =
-          '<div class="flex flex-wrap items-center gap-2 w-full max-w-full pb-3 mb-6 border-b border-slate-800/80 px-0.5">' +
-          '<button type="button" data-provider="" style="border-radius: 9999px;" class="provider-btn whitespace-nowrap shrink-0 px-4 py-1.5 mx-0.5 text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center text-center cursor-pointer ' +
-          (allTabActive ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30' : 'bg-slate-900/90 border border-slate-800 text-slate-200 hover:border-violet-500 hover:text-white') +
-          '">' + providerIcon('', 'All') + 'All Providers</button>' +
-          providers.map(function (p) {
-            var active = state.provider === p.key;
-            return '<button type="button" data-provider="' + esc(p.key) + '" style="border-radius: 9999px;" class="provider-btn whitespace-nowrap shrink-0 px-4 py-1.5 mx-0.5 text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center text-center cursor-pointer ' +
-              (active ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30' : 'bg-slate-900/90 border border-slate-800 text-slate-200 hover:border-violet-500 hover:text-white') +
-              '">' + providerIcon(p.key, p.label) + esc(p.label) + '</button>';
-          }).join('') +
-          '</div>';
+                var providerTabs =
+                  '<div class="flex flex-wrap items-center gap-2 w-full max-w-full pb-3 mb-6 border-b border-slate-800/80 px-0.5">' +
+                  providers.map(function (p) {
+                    var active = state.provider === p.key;
+                    return '<button type="button" data-provider="' + esc(p.key) + '" style="border-radius: 9999px;" class="provider-btn whitespace-nowrap shrink-0 px-4 py-1.5 mx-0.5 text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center text-center cursor-pointer ' +
+                      (active ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30' : 'bg-slate-900/90 border border-slate-800 text-slate-200 hover:border-violet-500 hover:text-white') +
+                      '">' + providerIcon(p.key, p.label) + esc(p.label) + '</button>';
+                  }).join('') +
+                  '</div>';
 
         // Search Input Component
         var activeLabel = state.provider
@@ -272,7 +281,12 @@
           if (DC_MODE && state.provider) {
             allItems = allItems.filter(function (i) { return String(i.code || '').toLowerCase() === state.provider; });
           }
-          var items = allItems.map(function (i) { return norm(i, s.tab_label); });
+          var items = allItems.map(function (i) {
+            var n = norm(i, s.tab_label);
+            if (n.id) state.itemsById[n.id] = n;
+            if (n.slug) state.itemsById[n.slug] = n;
+            return n;
+          });
           if (!items.length) return '';
           var head = label
             ? '<div class="flex items-center gap-2 mb-4 mt-2"><span class="h-5 w-1 rounded-full bg-violet-500"></span>' +
@@ -289,9 +303,18 @@
           bodyHtml = '<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4 w-full">' +
             (state.queryItems || []).map(movieCard).join('') + '</div>';
         } else if (sections.length) {
-          pagHTML = paginationHTML(pagination);
-          bodyHtml = sections.map(sectionBlock).join('');
-        } else {
+                  pagHTML = paginationHTML(pagination);
+                  bodyHtml = sections.map(sectionBlock).join('');
+                  // Akumulasi semua item (page berapa pun) ke itemsById utk detail lookup
+                  for (var si = 0; si < sections.length; si++) {
+                    var secItems = sections[si].items || [];
+                    for (var ii = 0; ii < secItems.length; ii++) {
+                      var ni = norm(secItems[ii], sections[si].tab_label);
+                      if (ni.id) state.itemsById[ni.id] = ni;
+                      if (ni.slug) state.itemsById[ni.slug] = ni;
+                    }
+                  }
+                } else {
           bodyHtml = '<div class="text-center py-16"><img src="/images/empty.png" alt="" class="mx-auto h-24 opacity-30">' +
             '<p class="mt-4 text-slate-400">Tidak ada drama ditemukan. Coba provider lain.</p></div>';
         }
@@ -434,11 +457,15 @@
   }
 
   function findMovie(id) {
-    var sectionsPromise = sectionsCache
-      ? Promise.resolve(sectionsCache)
-      : fetchSections({ lang: state.lang });
+      // 1) Items yang sudah dirender (semua halaman) — cek tercepat & paling akurat
+      var cached = state.itemsById[id];
+      if (cached) return Promise.resolve(cached);
 
-    return sectionsPromise.then(function (data) {
+      var sectionsPromise = sectionsCache
+        ? Promise.resolve(sectionsCache)
+        : fetchSections({ lang: state.lang });
+
+      return sectionsPromise.then(function (data) {
       var sections = data.sections || [];
       for (var s = 0; s < sections.length; s++) {
         var items = sections[s].items || [];
@@ -572,7 +599,7 @@
             var el = document.getElementById('episode-list');
             if (el) el.innerHTML = eps.map(renderEpBtn).join('');
             var lab = document.querySelector('#app #ep-label');
-            if (lab) lab.textContent = 'Episode ' + curEp + ' of ' + eps.length;
+                        if (lab) lab.textContent = 'Ep ' + curEp + ' of ' + eps.length;
           }
           setSource(data.url, data.ext);
           refreshActive();
@@ -662,8 +689,8 @@
       history.replaceState(null, '', '#/watch/' + encodeURIComponent(m.id) + '?ep=' + n);
       loadEp(n);
       var lab = document.getElementById('ep-label');
-      if (lab) lab.textContent = 'Episode ' + n + ' of ' + eps.length;
-    }
+            if (lab) lab.textContent = 'Ep ' + n + ' of ' + eps.length;
+          }
 
     function renderEpBtn(n) {
       var isCurrent = n === curEp;
@@ -682,8 +709,12 @@
           : 'flex h-10 w-10 items-center justify-center text-xs font-bold rounded-lg transition-all border border-slate-800 bg-slate-900/80 text-slate-400 hover:border-violet-500 hover:text-white cursor-pointer';
       }
       var next = document.getElementById('next-ep-link');
-      if (next) next.style.display = curEp < eps.length ? '' : 'none';
-    }
+            if (next) next.style.display = curEp < eps.length ? '' : 'none';
+            var prevBtn = document.getElementById('prev-ep-btn');
+            if (prevBtn) prevBtn.disabled = curEp <= 1;
+            var nextBtn = document.getElementById('next-ep-btn');
+            if (nextBtn) nextBtn.disabled = curEp >= eps.length;
+          }
 
     var epList = eps.map(renderEpBtn).join('');
 
@@ -706,11 +737,15 @@
       '<span id="player-res-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-700/80 text-slate-200">—</span>' +
       '</div>' +
       '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
-      '<span id="ep-label" class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
-      '<div class="flex items-center gap-4">' +
-      autoNextToggle +
-      '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
-      '</div></div></div>' +
+            '<div class="flex items-center gap-1.5">' +
+            '<button type="button" id="prev-ep-btn" aria-label="Episode sebelumnya" class="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-violet-500 hover:text-white disabled:opacity-40 disabled:pointer-events-none">‹</button>' +
+            '<span id="ep-label" class="font-medium text-slate-300">Ep ' + ep + ' of ' + eps.length + '</span>' +
+            '<button type="button" id="next-ep-btn" aria-label="Episode berikutnya" class="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-violet-500 hover:text-white disabled:opacity-40 disabled:pointer-events-none">›</button>' +
+            '</div>' +
+            '<div class="flex items-center gap-4">' +
+            autoNextToggle +
+            '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
+            '</div></div></div>' +
       '</div>' +
       '<div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">' +
       '<div class="flex items-center justify-between mb-4">' +
@@ -741,32 +776,18 @@
           theme: '#8b5cf6',
           aspectRatio: true,             // sesuaikan dengan video
       fullscreen: true,
-      fullscreenWeb: true,
-      mini: false,
-      screenshot: true,
-      pip: true,
-      autoSize: false,
-      autoOrientation: true,
-      setting: true,
-      loop: false,
+            mini: false,
+            pip: true,
+            lock: true,
+            autoSize: false,
+            autoOrientation: true,
+            setting: true,
+            loop: false,
             flip: true,
             playbackRate: true,
             hotkey: true,
-            lang: 'en',
-                  controls: [
-                    { html: 'play', position: 'left', index: 1 },
-                    { html: 'volume', position: 'left', index: 2 },
-                    { html: 'progress', position: 'left', index: 3 },
-                    { html: 'spacer', position: 'left', index: 4 },
-                    { html: 'pip', position: 'right', index: 1 },
-                    { html: 'screenshot', position: 'right', index: 2 },
-                    { html: 'flip', position: 'right', index: 3 },
-                    { html: 'playbackRate', position: 'right', index: 4 },
-                    { html: 'setting', position: 'right', index: 5 },
-                    { html: 'fullscreenWeb', position: 'right', index: 6 },
-                    { html: 'fullscreen', position: 'right', index: 7 },
-                  ],
-      customType: {
+                  lang: 'en',
+                  customType: {
         customHls: function (video, url) {
           // dipanggil via switchUrl(..., {type:'customHls'})
           if (window.Hls && Hls.isSupported()) {
@@ -828,7 +849,13 @@
       if (btn) selectEp(parseInt(btn.getAttribute('data-ep'), 10));
     });
     var nextEl = document.getElementById('next-ep-link');
-    if (nextEl) nextEl.addEventListener('click', function () { if (curEp < eps.length) selectEp(curEp + 1); });
+        if (nextEl) nextEl.addEventListener('click', function () { if (curEp < eps.length) selectEp(curEp + 1); });
+
+        // tombol prev/next episode di samping label
+        var prevBtn = document.getElementById('prev-ep-btn');
+        if (prevBtn) prevBtn.addEventListener('click', function () { if (curEp > 1) selectEp(curEp - 1); });
+        var nextBtn = document.getElementById('next-ep-btn');
+        if (nextBtn) nextBtn.addEventListener('click', function () { if (curEp < eps.length) selectEp(curEp + 1); });
 
     // destroy instance lama jika ada (re-render) lalu mulai
     if (window.__artLast && window.__artLast.destroy) { try { window.__artLast.destroy(); } catch (e) {} window.__artLast = null; }
