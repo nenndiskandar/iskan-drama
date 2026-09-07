@@ -452,6 +452,30 @@ function nartoParseWatchState(html) {
   } catch (e) { return null; }
 }
 
+app.get('/api/narto/detail/:bookId', async (req, res) => {
+  const bookId = req.params.bookId;
+  let title = String(req.query.title || '');
+  try {
+    const pageUrl = NARTO_BASE + '/detail/watch/' + encodeURIComponent(title || bookId) + '/1?lang=id-ID&from=search';
+    const r = await axios.get(pageUrl, { timeout: 25000, maxRedirects: 5, responseType: 'text', headers: NARTO_AH });
+    const html = r.data;
+    const meta = (html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || [])[1]
+      || (html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["'][^>]*>/i) || [])[1] || '';
+    const totalEp = (html.match(/const totalEpisodes?\s*=\s*(\d+)/i) || [])[1]
+      || (html.match(/"total_episodes"?\s*:\s*(\d+)/i) || [])[1] || '';
+    // Sinopsis murni: ambil teks deskripsi yang bukan branding (strip "Episode x/y — " & "- Narto Drama ...")
+        let synopsis = String(meta)
+          .replace(/^Episode\s*\d+\/\d+\s*[—–-]\s*/i, '')
+          .replace(/[.\s—-]*Narto\s+Drama[\s\S]*$/i, '')
+          .replace(/\s*\.\s*$/, '')
+          .trim();
+        if (!synopsis) synopsis = String(meta).replace(/[.\s—-]*Narto\s+Drama[\s\S]*$/i, '').trim();
+    res.json({ ok: true, id: bookId, title: title, description: synopsis, total_eps: totalEp ? parseInt(totalEp, 10) : null });
+  } catch (err) {
+    res.status(502).json({ ok: false, message: err.message || 'Detail failed' });
+  }
+});
+
 app.get('/api/narto/watch/:bookId/:ep', async (req, res) => {
   const { bookId, ep } = req.params;
   let title = String(req.query.title || '');

@@ -476,20 +476,34 @@
         }
       }
       return fetchJSON('/search', { q: id, limit: 5, lang: state.lang }).then(function (res) {
-        if (res.ok && res.items && res.items.length) return norm(res.items[0]);
-        // Not found — return fallback object instead of throwing
-        return {
-          id: id,
-          title: 'Drama Tidak Ditemukan',
-          description: 'Drama ini tidak tersedia di katalog Indonesia saat ini.',
-          poster: '',
-          episodes: 0,
-          total_eps: 0,
-          external_url: '',
-        };
-      });
-    });
-  }
+              if (res.ok && res.items && res.items.length) return norm(res.items[0]);
+              // Not found — return fallback object instead of throwing
+              return {
+                id: id,
+                title: 'Drama Tidak Ditemukan',
+                description: 'Drama ini tidak tersedia di katalog Indonesia saat ini.',
+                poster: '',
+                episodes: 0,
+                total_eps: 0,
+                external_url: '',
+              };
+            });
+          }).then(function (m) {
+            // Enrich dengan sinopsis dari endpoint detail (narto)
+            if (NARTO_MODE && m && m.id && !m.description) {
+              return fetchJSON('/narto/detail/' + encodeURIComponent(m.id) + '?title=' + encodeURIComponent(m.slug || slugOf(m)))
+                .then(function (d) {
+                  if (d.ok && d.description) {
+                    m.description = d.description;
+                    if (m.total_eps == null && d.total_eps) m.total_eps = d.total_eps;
+                  }
+                  return m;
+                })
+                .catch(function () { return m; });
+            }
+            return m;
+          });
+        }
 
   function renderDetail(id) {
     showSpinner();
