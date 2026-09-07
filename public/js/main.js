@@ -21,10 +21,15 @@
   }
 
   function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Buang penanda "(Disulihsuarakan)" dari judul (dipakai utk tampilan card & detail)
+    function cleanTitle(t) {
+      return String(t == null ? '' : t).replace(/\s*\(disulihsuarakan\)\s*/gi, '').trim();
+    }
 
   function hideLoading() {
     var el = document.getElementById('player-loading');
@@ -88,26 +93,33 @@
   // Transmit Card Component
   // ===================================================================
   function movieCard(m) {
-    var epBadge = (m.episodes || m.total_eps)
-      ? '<span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">' + (m.episodes || m.total_eps) + ' ep</span>'
-      : '';
+      var rawTitle = m.title || '';
+      // Judul berpenanda sulih suara → badge "dubbing", penanda "(Disulihsuarakan)" dibuang dari teks
+      var isDub = /\(disulihsuarakan\)/i.test(rawTitle);
+      var displayTitle = isDub ? rawTitle.replace(/\s*\(disulihsuarakan\)\s*/gi, '').trim() : rawTitle;
+      var dubbingBadge = isDub
+        ? '<span class="absolute top-1.5 left-1.5 rounded bg-violet-600/90 px-1 py-0.5 text-[9px] font-semibold text-white">dubbing</span>'
+        : '';
+      var epBadge = (m.episodes || m.total_eps)
+        ? '<span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">' + (m.episodes || m.total_eps) + ' ep</span>'
+        : '';
 
 
     var poster =
       m.poster && m.poster !== '/images/fallback.png'
-        ? '<img src="' + esc(m.poster) + '" alt="' + esc(m.title) + '" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">'
-        : '<div class="flex h-full w-full items-center justify-center bg-slate-900 text-3xl font-extrabold text-violet-500">' + esc((m.title || 'N').trim().charAt(0).toUpperCase()) + '</div>';
+              ? '<img src="' + esc(m.poster) + '" alt="' + esc(displayTitle) + '" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">'
+              : '<div class="flex h-full w-full items-center justify-center bg-slate-900 text-3xl font-extrabold text-violet-500">' + esc((displayTitle || 'N').trim().charAt(0).toUpperCase()) + '</div>';
 
     return (
       '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="group block w-full overflow-hidden rounded-2xl transition-opacity duration-300 hover:opacity-90">' +
       '<div class="relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-slate-950">' +
-      poster + epBadge +
+            poster + epBadge + dubbingBadge +
       '<div class="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">' +
       '<div class="flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg transition-transform duration-300 group-hover:scale-110">' +
       '<svg class="h-5 w-5 ml-0.5 fill-current" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>' +
       '</div></div></div>' +
       '<div class="pt-2">' +
-      '<h3 class="text-[11px] font-medium text-slate-100 leading-snug">' + esc(m.title) + '</h3>' +
+      '<h3 class="text-[11px] font-medium text-slate-100 leading-snug">' + esc(displayTitle) + '</h3>' +
       (m.category ? '<p class="mt-0.5 text-[10px] text-slate-400 truncate">' + esc(m.category) + '</p>' : '') +
       (m.tags && m.tags.length ? '<div class="mt-1 flex flex-wrap gap-1">' + m.tags.slice(0, 2).map(function (t) {
         return '<span class="rounded bg-slate-800/80 px-1 py-0.5 text-[9px] font-medium text-slate-300">#' + esc(t) + '</span>';
@@ -464,9 +476,9 @@
           return;
         }
         var poster =
-          m.poster && m.poster !== '/images/fallback.png'
-            ? '<img src="' + esc(m.poster) + '" alt="' + esc(m.title) + '" class="w-full rounded-2xl border border-slate-800 shadow-2xl object-cover aspect-[2/3]">'
-            : '<div class="flex items-center justify-center h-[380px] rounded-2xl border border-slate-800 bg-slate-900 text-5xl font-extrabold text-violet-500">' + esc((m.title || 'N').trim().charAt(0).toUpperCase()) + '</div>';
+                  m.poster && m.poster !== '/images/fallback.png'
+                    ? '<img src="' + esc(m.poster) + '" alt="' + esc(cleanTitle(m.title)) + '" class="w-full rounded-2xl border border-slate-800 shadow-2xl object-cover aspect-[2/3]">'
+                    : '<div class="flex items-center justify-center h-[380px] rounded-2xl border border-slate-800 bg-slate-900 text-5xl font-extrabold text-violet-500">' + esc((cleanTitle(m.title) || 'N').trim().charAt(0).toUpperCase()) + '</div>';
 
         var meta =
           (m.episodes ? '<span class="text-slate-300">📺 ' + m.episodes + ' Episodes</span>' : '') +
@@ -488,7 +500,7 @@
           '<div class="space-y-6">' +
           '<div>' +
           '<a href="#/" class="inline-flex items-center text-xs font-semibold text-violet-400 hover:text-violet-300 mb-3 gap-1">← Back to Index</a>' +
-          '<h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">' + esc(m.title) + '</h1>' +
+          '<h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">' + esc(cleanTitle(m.title)) + '</h1>' +
           '</div>' +
           (meta ? '<div class="flex flex-wrap gap-4 text-sm font-medium">' + meta + '</div>' : '') +
           (tags ? '<div class="flex flex-wrap gap-2">' + tags + '</div>' : '') +
@@ -548,11 +560,10 @@
                           if (fb) { fb.classList.add('hidden'); fb.classList.remove('flex'); }
                           var isMp4 = String(extHint || '').toLowerCase() === 'mp4' ||
                                       (extHint !== 'm3u8' && (url.toLowerCase().indexOf('mime_type=video_mp4') >= 0 || url.toLowerCase().endsWith('.mp4')));
-                          // play via Plyr kalau ada, fallback native
-                          function playVideo() {
-                            if (window.__plyr) { try { window.__plyr.play().catch(function () {}); } catch (e) { video.play().catch(function () {}); } }
-                            else { video.play().catch(function () {}); }
-                          }
+                          // play via native <video>
+                                                    function playVideo() {
+                                                      video.play().catch(function () {});
+                                                    }
                   // Badge sumber + resolusi (di bawah player)
                                       var badge = document.getElementById('player-source-badge');
                                       var resBadge = document.getElementById('player-res-badge');
@@ -691,24 +702,16 @@
     $('#app').innerHTML =
       '<div class="grid xl:grid-cols-[1fr_360px] gap-8 items-start">' +
       '<div class="space-y-4">' +
-      '<div class="bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex justify-center items-center max-h-[75vh] mx-auto w-fit min-w-[280px] relative">' +
-            '<video id="hls-player" class="max-h-[75vh] w-auto h-auto max-w-full object-contain mx-auto" controls playsinline></video>' +
-            '<div id="player-loading" class="absolute inset-0 flex items-center justify-center bg-black/60">' +
-            '<div class="animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500 h-10 w-10"></div>' +
-            '</div>' +
+            '<div class="bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex justify-center items-center max-h-[75vh] mx-auto w-fit min-w-[280px] relative">' +
+                  '<video id="hls-player" class="max-h-[75vh] w-auto h-auto max-w-full object-contain mx-auto" controls playsinline></video>' +
             '<div id="player-fallback" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Memuat stream...</div>' +
             '</div>' +
-            '<div class="space-y-2">' +
-                  '<div class="flex items-center justify-center gap-2 text-sm text-slate-400">' +
-                  '<div id="player-source-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-700/80 text-slate-200">—</div>' +
-                  '<span id="player-res-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-700/80 text-slate-200">—</span>' +
-                  '</div>' +
-                  '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
-                  '<span id="ep-label" class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
-                  '<div class="flex items-center gap-4">' +
-                  autoNextToggle +
-                  '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
-                  '</div></div></div>' +
+            '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
+                              '<span id="ep-label" class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
+                              '<div class="flex items-center gap-4">' +
+                              autoNextToggle +
+                              '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
+                              '</div></div></div>' +
       '</div>' +
       '<div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">' +
       '<div class="flex items-center justify-between mb-4">' +
@@ -720,23 +723,7 @@
 
     video = document.getElementById('hls-player');
 
-    // Plyr: upgrade <video> jadi player skin (fallback native kalau CDN gagal)
-        if (window.__plyr && window.__plyr.destroy) { try { window.__plyr.destroy(); } catch (e) {} window.__plyr = null; }
-        function initPlyr() {
-          if (window.Plyr) {
-            try { window.__plyr = new Plyr(video, { autoplay: false, playsinline: true }); } catch (e) { window.__plyr = null; }
-          } else { window.__plyr = null; }
-        }
-        initPlyr();
-        // fallback: kalau Plyr belum load (CDN lambat/gagal), ambil dari cdnjs lalu init
-        if (!window.__plyr) {
-          var ps = document.createElement('script');
-          ps.src = 'https://cdnjs.cloudflare.com/ajax/libs/plyr/3.7.8/plyr.min.js';
-          ps.onload = function () { initPlyr(); };
-          document.head.appendChild(ps);
-        }
-
-    // Auto Next toggle listener
+        // Auto Next toggle listener
     var toggleEl = document.getElementById('auto-next-toggle');
     if (toggleEl) {
       toggleEl.addEventListener('change', function (e) { state.autoNext = e.target.checked; });
