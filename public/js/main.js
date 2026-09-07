@@ -100,15 +100,15 @@
       var dubbingBadge = isDub
         ? '<span class="absolute top-1.5 left-1.5 rounded bg-violet-600/90 px-1 py-0.5 text-[9px] font-semibold text-white">dubbing</span>'
         : '';
-      var epBadge = (m.episodes || m.total_eps)
-        ? '<span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">' + (m.episodes || m.total_eps) + ' ep</span>'
-        : '';
+    var epBadge = (m.episodes || m.total_eps)
+      ? '<span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-semibold text-white">' + (m.episodes || m.total_eps) + ' ep</span>'
+      : '';
 
 
     var poster =
       m.poster && m.poster !== '/images/fallback.png'
-              ? '<img src="' + esc(m.poster) + '" alt="' + esc(displayTitle) + '" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">'
-              : '<div class="flex h-full w-full items-center justify-center bg-slate-900 text-3xl font-extrabold text-violet-500">' + esc((displayTitle || 'N').trim().charAt(0).toUpperCase()) + '</div>';
+            ? '<img src="' + esc(m.poster) + '" alt="' + esc(displayTitle) + '" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">'
+            : '<div class="flex h-full w-full items-center justify-center bg-slate-900 text-3xl font-extrabold text-violet-500">' + esc((displayTitle || 'N').trim().charAt(0).toUpperCase()) + '</div>';
 
     return (
       '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="group block w-full overflow-hidden rounded-2xl transition-opacity duration-300 hover:opacity-90">' +
@@ -192,27 +192,33 @@
         };
 
         // Provider Icon Helper (Favicon Google S2 API + Fallback Monogram Avatar)
-        function providerIcon(pKey, pLabel) {
-          if (!pKey) {
-            return '<span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-violet-400/20 text-[10px] text-violet-300 font-extrabold mr-1.5">★</span>';
-          }
-          var initial = (pLabel || pKey).charAt(0).toUpperCase();
-          var domainMap = {
-            dramabox: 'dramabox.com',
-            reelshort: 'reelshort.com',
-            goodshort: 'goodshort.com',
-            shortmax: 'shortmax.com',
-            flextv: 'flextv.cc',
-            moboreels: 'moboreels.com',
-            kalostv: 'kalostv.com',
-            vigloo: 'vigloo.com',
-            melolo: 'melolo.com',
-            serealplus: 'serealplus.com'
-          };
-          var domain = domainMap[pKey] || (pKey + '.com');
-          var iconUrl = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=32';
-          return '<img src="' + iconUrl + '" alt="" class="h-4 w-4 rounded-full object-cover mr-1.5 shrink-0 inline-block" onerror="this.onerror=null;this.replaceWith(document.createRange().createContextualFragment(\'<span class=\\\'inline-flex h-4 w-4 items-center justify-center rounded-full bg-violet-500/30 text-[9px] font-extrabold text-violet-300 mr-1.5 shrink-0\\\'>' + initial + '</span>\'))">';
-        }
+                // fallback global utk onerror (hindari nested-quote yang rawan syntax error)
+                window.__pIcon = function (el, initial) {
+                  try {
+                    el.outerHTML = '<span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-violet-500/30 text-[9px] font-extrabold text-violet-300 mr-1.5 shrink-0">' + String(initial || '?') + '</span>';
+                  } catch (e) {}
+                };
+                function providerIcon(pKey, pLabel) {
+                  if (!pKey) {
+                    return '<span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-violet-400/20 text-[10px] text-violet-300 font-extrabold mr-1.5">★</span>';
+                  }
+                  var initial = (pLabel || pKey).charAt(0).toUpperCase();
+                  var domainMap = {
+                    dramabox: 'dramabox.com',
+                    reelshort: 'reelshort.com',
+                    goodshort: 'goodshort.com',
+                    shortmax: 'shortmax.com',
+                    flextv: 'flextv.cc',
+                    moboreels: 'moboreels.com',
+                    kalostv: 'kalostv.com',
+                    vigloo: 'vigloo.com',
+                    melolo: 'melolo.com',
+                    serealplus: 'serealplus.com'
+                  };
+                  var domain = domainMap[pKey] || (pKey + '.com');
+                  var iconUrl = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=32';
+                  return '<img src="' + iconUrl + '" alt="" class="h-4 w-4 rounded-full object-cover mr-1.5 shrink-0 inline-block" onerror="window.__pIcon(this,\'' + initial + '\')">';
+                }
 
         // Provider Tabs Horizontal Scrollable Layout (Extra Horizontal Padding)
         var allTabActive = !state.provider;
@@ -476,9 +482,9 @@
           return;
         }
         var poster =
-                  m.poster && m.poster !== '/images/fallback.png'
-                    ? '<img src="' + esc(m.poster) + '" alt="' + esc(cleanTitle(m.title)) + '" class="w-full rounded-2xl border border-slate-800 shadow-2xl object-cover aspect-[2/3]">'
-                    : '<div class="flex items-center justify-center h-[380px] rounded-2xl border border-slate-800 bg-slate-900 text-5xl font-extrabold text-violet-500">' + esc((cleanTitle(m.title) || 'N').trim().charAt(0).toUpperCase()) + '</div>';
+          m.poster && m.poster !== '/images/fallback.png'
+            ? '<img src="' + esc(m.poster) + '" alt="' + esc(cleanTitle(m.title)) + '" class="w-full rounded-2xl border border-slate-800 shadow-2xl object-cover aspect-[2/3]">'
+            : '<div class="flex items-center justify-center h-[380px] rounded-2xl border border-slate-800 bg-slate-900 text-5xl font-extrabold text-violet-500">' + esc((cleanTitle(m.title) || 'N').trim().charAt(0).toUpperCase()) + '</div>';
 
         var meta =
           (m.episodes ? '<span class="text-slate-300">📺 ' + m.episodes + ' Episodes</span>' : '') +
@@ -525,11 +531,11 @@
   }
 
   function startWatch(m, ep, bare) {
-    var eps = [];
+        var eps = [];
     var epCount = m.episodes || 1;
     for (var i = 1; i <= epCount; i++) eps.push(i);
 
-    var video = null;       // cached <video> element
+    var player = null;      // instance ArtPlayer aktif
     var curEp = ep;         // episode aktif (tanpa re-render)
 
     function streamUrlFor(n) {
@@ -553,113 +559,101 @@
         '&lang=' + encodeURIComponent(state.lang);
     }
 
-    // setUp+load stream utk episode tertentu ke video element (tanpa full re-render)
-        function startPlayback(url, extHint) {
-                          hideLoading();
-                          var fb = document.getElementById('player-fallback');
-                          if (fb) { fb.classList.add('hidden'); fb.classList.remove('flex'); }
-                          var isMp4 = String(extHint || '').toLowerCase() === 'mp4' ||
-                                      (extHint !== 'm3u8' && (url.toLowerCase().indexOf('mime_type=video_mp4') >= 0 || url.toLowerCase().endsWith('.mp4')));
-                          // play via native <video>
-                                                    function playVideo() {
-                                                      video.play().catch(function () {});
-                                                    }
-                  // Badge sumber + resolusi (di bawah player)
-                                      var badge = document.getElementById('player-source-badge');
-                                      var resBadge = document.getElementById('player-res-badge');
-                                      if (badge) {
-                                        var isTiktok = /tiktokcdn\.com/i.test(url);
-                                        badge.textContent = isMp4 ? 'MP4' : 'HLS';
-                                        badge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide ' +
-                                          (isMp4
-                                            ? (isTiktok ? 'bg-emerald-500/90 text-black' : 'bg-sky-500/90 text-black')
-                                            : 'bg-violet-500/90 text-white');
-                                        badge.classList.remove('hidden');
-                                        badge.title = isMp4 ? (isTiktok ? 'Sumber: TikTok CDN (MP4 langsung)' : 'Sumber: MP4 langsung') : 'Sumber: HLS (.m3u8)';
-                                      }
-                                      if (resBadge) {
-                                        resBadge.textContent = 'Res: —';
-                                        resBadge.classList.remove('hidden');
-                                        // isi setelah metadata video terbaca
-                                        video.addEventListener('loadedmetadata', function h() {
-                                                                                  if (video.videoWidth && resBadge) {
-                                                                                    resBadge.textContent = 'Res: ' + video.videoWidth + '×' + video.videoHeight;
-                                                                                    resBadge.classList.remove('hidden');
-                                                                                  }
-                                                                                  video.removeEventListener('loadedmetadata', h);
-                                                                                });
-                                                                              }
-                                                          // Destroy HLS instance lama agar tidak ganggu playback baru
-          if (window.__hlsLast && window.__hlsLast.destroy) {
-            try { window.__hlsLast.destroy(); } catch (e) {}
-            window.__hlsLast = null;
+    // resolve stream utk episode n, set ke ArtPlayer (HLS via hls.js customType, MP4 native)
+    function loadEp(n) {
+      curEp = n;
+      hideLoading();
+      fetch(streamUrlFor(n))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) throw new Error(data.message || 'stream not found');
+          if (data.total_eps && data.total_eps > eps.length) {
+            for (var k = eps.length + 1; k <= data.total_eps; k++) eps.push(k);
+            var el = document.getElementById('episode-list');
+            if (el) el.innerHTML = eps.map(renderEpBtn).join('');
+            var lab = document.querySelector('#app #ep-label');
+            if (lab) lab.textContent = 'Episode ' + curEp + ' of ' + eps.length;
           }
-          video.removeAttribute('src');
-          // native MP4 (incl. TikTok CDN) → set video.src langsung. Media tanpa CORS
-          // tetap bisa diputar; gunakan no-referrer supaya CDN yg blok Referer jalan.
-          if (isMp4) {
-                      video.setAttribute('referrerpolicy', 'no-referrer');
-                      try { video.crossOrigin = null; } catch (e) {}
-                      video.src = url;
-                      playVideo();
-                      return;
-                    }
-          // HLS .m3u8 → hls.js
-          if (window.Hls && Hls.isSupported()) {
-            var isNartoHost = /(^|\.)(narto-drama\.com(:|$))/i.test(url) || /(^|\.)edge\.narto-drama\.com(:|$)/i.test(url) || /(^|\.)cdn\.narto-drama\.com(:|$)/i.test(url);
+          setSource(data.url, data.ext);
+          refreshActive();
+        })
+        .catch(function (err) {
+          var fb = document.getElementById('player-fallback');
+          if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Gagal memuat stream: ' + esc(err.message || err); }
+          hideLoading();
+        });
+    }
+
+    // set sumber video ke ArtPlayer (destroy tob sbelum ganti)
+    function setSource(url, extHint) {
+      var fb = document.getElementById('player-fallback');
+      if (fb) { fb.classList.add('hidden'); fb.classList.remove('flex'); }
+      var isMp4 = String(extHint || '').toLowerCase() === 'mp4' ||
+                  (extHint !== 'm3u8' && (url.toLowerCase().indexOf('mime_type=video_mp4') >= 0 || url.toLowerCase().endsWith('.mp4')));
+
+      // Badge sumber + resolusi (di bawah player)
+      var badge = document.getElementById('player-source-badge');
+      var resBadge = document.getElementById('player-res-badge');
+      if (badge) {
+        var isTiktok = /tiktokcdn\.com/i.test(url);
+        badge.textContent = isMp4 ? 'MP4' : 'HLS';
+        badge.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide ' +
+          (isMp4 ? (isTiktok ? 'bg-emerald-500/90 text-black' : 'bg-sky-500/90 text-black') : 'bg-violet-500/90 text-white');
+        badge.classList.remove('hidden');
+        badge.title = isMp4 ? (isTiktok ? 'Sumber: TikTok CDN (MP4 langsung)' : 'Sumber: MP4 langsung') : 'Sumber: HLS (.m3u8)';
+      }
+      if (resBadge) {
+        resBadge.textContent = 'Res: —';
+        resBadge.classList.remove('hidden');
+      }
+
+      var video = player.video;
+      // HLS instance lama harus di-destroy sebelum ganti sumber
+      if (window.__hlsLast && window.__hlsLast.destroy) {
+        try { window.__hlsLast.destroy(); } catch (e) {}
+        window.__hlsLast = null;
+      }
+
+      // MP4 langsung (incl TikTok CDN) → native src
+      if (isMp4) {
+        try { video.crossOrigin = null; } catch (e) {}
+        player.switchUrl(url);   // switchUrl paham ekstensi file & set src
+        player.play();
+        return;
+      }
+
+      // HLS .m3u8 → hls.js customType (biar bisa set Referer utk CDN narto)
+      if (window.Hls && Hls.isSupported()) {
+        var isNartoHost = /(^|\.)(narto-drama\.com(:|$))/i.test(url) || /(^|\.)edge\.narto-drama\.com(:|$)/i.test(url) || /(^|\.)cdn\.narto-drama\.com(:|$)/i.test(url);
+        player.switchUrl(url, {
+          type: 'customHls',
+          customType: function (video2, url2) {
             var hls = new Hls({
               xhrSetup: function (xhr) {
                 if (isNartoHost) {
                   xhr.setRequestHeader('Referer', 'https://edge.narto-drama.com/');
                   xhr.setRequestHeader('Origin', 'https://edge.narto-drama.com');
                 } else {
-                  // external CDN (mis. vigloo/shortmax) — Referer kosong
                   xhr.setRequestHeader('Referer', '');
                 }
               }
             });
-            hls.loadSource(url);
-                        hls.attachMedia(video);
-                        hls.on(Hls.Events.MANIFEST_PARSED, function () { playVideo(); });
-                        window.__hlsLast = hls;
-                      } else if (url.toLowerCase().indexOf('mime_type=video_mp4') >= 0 || url.toLowerCase().endsWith('.mp4')) {
-                        video.src = url; playVideo();
-                      } else {
-            if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Browser tidak mendukung HLS.'; }
-            hideLoading();
+            hls.loadSource(url2);
+            hls.attachMedia(video2);
+            window.__hlsLast = hls;
           }
-        }
-
-    // panggil /api/stream lalu mulai playback utk episode n
-        function loadEp(n) {
-          curEp = n;
-          hideLoading();
-          // HLS instance lama harus di-destroy sebelum ganti sumber — kalau tidak,
-          // hls.js keep buffering source lama & player stuck.
-          if (window.__hlsLast && window.__hlsLast.destroy) {
-            try { window.__hlsLast.destroy(); } catch (e) {}
-            window.__hlsLast = null;
-          }
-          video.removeAttribute('src');
-          fetch(streamUrlFor(n))
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-              if (!data.ok) throw new Error(data.message || 'stream not found');
-              if (data.total_eps && data.total_eps > eps.length) {
-                for (var k = eps.length + 1; k <= data.total_eps; k++) eps.push(k);
-                var el = document.getElementById('episode-list');
-                if (el) el.innerHTML = eps.map(renderEpBtn).join('');
-                var lab = document.querySelector('#app #ep-label');
-                if (lab) lab.textContent = 'Episode ' + curEp + ' of ' + eps.length;
-              }
-              startPlayback(data.url, data.ext);
-                            refreshActive();
-            })
-        .catch(function (err) {
-          var fb = document.getElementById('player-fallback');
-          if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Gagal memuat stream: ' + esc(err.message || err); }
-          hideLoading();
         });
+        player.play();
+      } else {
+        // fallback native HLS (Safari dll) atau error
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          player.switchUrl(url);
+          player.play();
+        } else {
+          if (fb) { fb.classList.remove('hidden'); fb.classList.add('flex'); fb.textContent = 'Browser tidak mendukung HLS.'; }
+          hideLoading();
+        }
+      }
     }
 
     function selectEp(n) {
@@ -694,24 +688,29 @@
     var epList = eps.map(renderEpBtn).join('');
 
     var autoNextToggle =
-      '<label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300 font-medium">' +
-      '<input type="checkbox" id="auto-next-toggle" ' + (state.autoNext ? 'checked' : '') + ' class="sr-only peer">' +
-      '<div class="relative w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-violet-600"></div>' +
-      '<span>Auto Next</span></label>';
+          '<label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300 font-medium">' +
+          '<input type="checkbox" id="auto-next-toggle" ' + (state.autoNext ? 'checked' : '') + ' class="sr-only peer">' +
+          '<div class="relative w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-violet-600"></div>' +
+          '<span>Auto Next</span></label>';
 
     $('#app').innerHTML =
       '<div class="grid xl:grid-cols-[1fr_360px] gap-8 items-start">' +
-      '<div class="space-y-4">' +
-            '<div class="bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 flex justify-center items-center max-h-[75vh] mx-auto w-fit min-w-[280px] relative">' +
-                  '<video id="hls-player" class="max-h-[75vh] w-auto h-auto max-w-full object-contain mx-auto" controls playsinline></video>' +
-            '<div id="player-fallback" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 text-sm">Memuat stream...</div>' +
+      '<div class="space-y-4 min-w-0">' +
+      // ArtPlayer container: LEBAR PENUH kolom (w-full), tanpa overflow-hidden (biar panel settings tak terpotong)
+      '<div id="art-wrap" class="w-full rounded-2xl bg-black shadow-2xl border border-slate-800 relative">' +
+            '<div id="art-player" style="width:100%; aspect-ratio: 9/16; max-height: 75vh;"></div>' +
             '</div>' +
-            '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
-                              '<span id="ep-label" class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
-                              '<div class="flex items-center gap-4">' +
-                              autoNextToggle +
-                              '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
-                              '</div></div></div>' +
+      '<div class="space-y-2">' +
+      '<div class="flex items-center justify-center gap-2 text-sm text-slate-400">' +
+      '<div id="player-source-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-700/80 text-slate-200">—</div>' +
+      '<span id="player-res-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-700/80 text-slate-200">—</span>' +
+      '</div>' +
+      '<div class="flex items-center justify-between text-sm text-slate-400 px-1">' +
+      '<span id="ep-label" class="font-medium text-slate-300">Episode ' + ep + ' of ' + eps.length + '</span>' +
+      '<div class="flex items-center gap-4">' +
+      autoNextToggle +
+      '<a href="#/detail/' + encodeURIComponent(m.id) + '" class="text-violet-400 hover:text-violet-300 font-semibold">View Detail</a>' +
+      '</div></div></div>' +
       '</div>' +
       '<div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5">' +
       '<div class="flex items-center justify-between mb-4">' +
@@ -721,16 +720,105 @@
       '<div id="episode-list" class="flex flex-wrap gap-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-1">' + epList + '</div></div>' +
       '</div>';
 
-    video = document.getElementById('hls-player');
+    if (!window.Artplayer) {
+          var fb = document.getElementById('player-fallback');
+          if (fb) {
+            fb.classList.remove('hidden'); fb.classList.add('flex');
+            fb.innerHTML = 'Player library gagal dimuat.';
+          }
+          hideLoading();
+          return;
+        }
 
-        // Auto Next toggle listener
+        // ArtPlayer — control lengkap & posisi aman (tidak terpotong)
+        player = new window.Artplayer({
+          container: '#art-player',
+          url: '',                       // kosong dulu; diisi loadEp()
+          autoplay: false,
+          muted: false,
+          playsInline: true,
+          volume: 0.8,
+          theme: '#8b5cf6',
+          aspectRatio: true,             // sesuaikan dengan video
+      fullscreen: true,
+      fullscreenWeb: true,
+      mini: false,
+      screenshot: true,
+      pip: true,
+      autoSize: false,
+      autoOrientation: true,
+      setting: true,
+      loop: false,
+            flip: true,
+            playbackRate: true,
+            hotkey: true,
+            lang: 'en',
+                  controls: [
+                    { html: 'play', position: 'left', index: 1 },
+                    { html: 'volume', position: 'left', index: 2 },
+                    { html: 'progress', position: 'left', index: 3 },
+                    { html: 'spacer', position: 'left', index: 4 },
+                    { html: 'pip', position: 'right', index: 1 },
+                    { html: 'screenshot', position: 'right', index: 2 },
+                    { html: 'flip', position: 'right', index: 3 },
+                    { html: 'playbackRate', position: 'right', index: 4 },
+                    { html: 'setting', position: 'right', index: 5 },
+                    { html: 'fullscreenWeb', position: 'right', index: 6 },
+                    { html: 'fullscreen', position: 'right', index: 7 },
+                  ],
+      customType: {
+        customHls: function (video, url) {
+          // dipanggil via switchUrl(..., {type:'customHls'})
+          if (window.Hls && Hls.isSupported()) {
+            var hls = new Hls({
+              xhrSetup: function (xhr) {
+                xhr.setRequestHeader('Referer', '');
+              }
+            });
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            window.__hlsLast = hls;
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+          }
+        }
+      },
+    });
+
+    // loading overlay sembunyi saat video siap
+    player.on('ready', function () { hideLoading(); });
+    player.on('play', function () { hideLoading(); });
+    player.on('error', function (err) {
+      var fb = document.getElementById('player-fallback');
+      if (fb && !fb.classList.contains('hidden')) { /* biarkan */ }
+      hideLoading();
+    });
+    player.on('video:error', function () {
+      var fb = document.getElementById('player-fallback');
+      if (fb && fb.classList.contains('hidden')) {
+        fb.classList.remove('hidden'); fb.classList.add('flex');
+        fb.textContent = 'Gagal memuat video. Coba episode lain.';
+      }
+      hideLoading();
+    });
+
+    // Badge resolusi: isi dari metadata video (via player.video)
+    player.video.addEventListener('loadedmetadata', function () {
+      var resBadge = document.getElementById('player-res-badge');
+      if (resBadge && player.video.videoWidth) {
+        resBadge.textContent = 'Res: ' + player.video.videoWidth + '×' + player.video.videoHeight;
+        resBadge.classList.remove('hidden');
+      }
+    });
+
+    // Auto Next toggle listener
     var toggleEl = document.getElementById('auto-next-toggle');
     if (toggleEl) {
       toggleEl.addEventListener('change', function (e) { state.autoNext = e.target.checked; });
     }
 
     // video ended → auto next (tanpa re-render)
-    video.onended = function () {
+    player.video.onended = function () {
       if (state.autoNext && curEp < eps.length) selectEp(curEp + 1);
     };
 
@@ -742,6 +830,9 @@
     var nextEl = document.getElementById('next-ep-link');
     if (nextEl) nextEl.addEventListener('click', function () { if (curEp < eps.length) selectEp(curEp + 1); });
 
+    // destroy instance lama jika ada (re-render) lalu mulai
+    if (window.__artLast && window.__artLast.destroy) { try { window.__artLast.destroy(); } catch (e) {} window.__artLast = null; }
+    window.__artLast = player;
     loadEp(ep);   // mulai episode awal
   }
   function parseHash() {
