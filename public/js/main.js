@@ -476,18 +476,37 @@
         }
       }
       return fetchJSON('/search', { q: id, limit: 5, lang: state.lang }).then(function (res) {
-              if (res.ok && res.items && res.items.length) return norm(res.items[0]);
-              // Not found — return fallback object instead of throwing
-              return {
-                id: id,
-                title: 'Drama Tidak Ditemukan',
-                description: 'Drama ini tidak tersedia di katalog Indonesia saat ini.',
-                poster: '',
-                episodes: 0,
-                total_eps: 0,
-                external_url: '',
-              };
-            });
+                    if (res.ok && res.items && res.items.length) return norm(res.items[0]);
+                    // Tidak ketemu di sections/search → coba resolve via endpoint detail
+                    // (book_id dari page 2+ tidak ada di sectionsCache page 1, dan /search
+                    //  gagal untuk book_id; endpoint detail scrape watch page upstream).
+                    if (NARTO_MODE) {
+                      return fetchJSON('/narto/detail/' + encodeURIComponent(id)).then(function (d) {
+                        if (d.ok && d.description) {
+                          return { id: id, title: d.title || id, description: d.description,
+                                   poster: '', episodes: d.total_eps || 1, total_eps: d.total_eps || 1, external_url: '' };
+                        }
+                        // Not found fallback
+                        return { id: id, title: 'Drama Tidak Ditemukan',
+                                 description: 'Drama ini tidak tersedia di katalog Indonesia saat ini.',
+                                 poster: '', episodes: 0, total_eps: 0, external_url: '' };
+                      }).catch(function () {
+                        return { id: id, title: 'Drama Tidak Ditemukan',
+                                 description: 'Drama ini tidak tersedia di katalog Indonesia saat ini.',
+                                 poster: '', episodes: 0, total_eps: 0, external_url: '' };
+                      });
+                    }
+                    // Not found — return fallback object instead of throwing
+                    return {
+                      id: id,
+                      title: 'Drama Tidak Ditemukan',
+                      description: 'Drama ini tidak tersedia di katalog Indonesia saat ini.',
+                      poster: '',
+                      episodes: 0,
+                      total_eps: 0,
+                      external_url: '',
+                    };
+                  });
           }).then(function (m) {
             // Enrich dengan sinopsis dari endpoint detail (narto)
             if (NARTO_MODE && m && m.id && !m.description) {
