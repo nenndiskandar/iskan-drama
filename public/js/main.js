@@ -765,7 +765,7 @@
     seekLeftEl.style.cssText = 'display:none;position:absolute;left:22%;top:50%;z-index:120;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none;';
     seekLeftEl.innerHTML =
       '<div style="width:52px;height:52px;border-radius:50%;background:rgba(139,92,246,0.35);backdrop-filter:blur(8px);border:2px solid rgba(139,92,246,0.85);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(139,92,246,0.6);">' +
-      '  <svg style="width:26px;height:26px;fill:#fff;transform:scaleX(-1);" viewBox="0 0 24 24"><path d="M12.5 12L20 6v12l-7.5-6zm-8 0L12 6v12l-7.5-6z"/></svg>' +
+      '  <svg style="width:26px;height:26px;fill:#fff;" viewBox="0 0 24 24"><path d="M12.5 12L20 6v12l-7.5-6zm-8 0L12 6v12l-7.5-6z"/></svg>' +
       '</div>' +
       '<span style="font-size:11px;font-weight:800;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.9);letter-spacing:0.5px;">-10 Detik</span>';
 
@@ -775,7 +775,7 @@
     seekRightEl.style.cssText = 'display:none;position:absolute;right:22%;top:50%;z-index:120;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none;';
     seekRightEl.innerHTML =
       '<div style="width:52px;height:52px;border-radius:50%;background:rgba(139,92,246,0.35);backdrop-filter:blur(8px);border:2px solid rgba(139,92,246,0.85);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(139,92,246,0.6);">' +
-      '  <svg style="width:26px;height:26px;fill:#fff;" viewBox="0 0 24 24"><path d="M12.5 12L20 6v12l-7.5-6zm-8 0L12 6v12l-7.5-6z"/></svg>' +
+      '  <svg style="width:26px;height:26px;fill:#fff;transform:scaleX(-1);" viewBox="0 0 24 24"><path d="M12.5 12L20 6v12l-7.5-6zm-8 0L12 6v12l-7.5-6z"/></svg>' +
       '</div>' +
       '<span style="font-size:11px;font-weight:800;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.9);letter-spacing:0.5px;">+10 Detik</span>';
 
