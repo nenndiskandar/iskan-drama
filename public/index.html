@@ -74,6 +74,16 @@
         display: none !important;
       }
     }
+    /* Double Tap Seek Animation Badge */
+    @keyframes popSeek {
+      0% { transform: translateY(-50%) scale(0.8); opacity: 0; }
+      60% { transform: translateY(-50%) scale(1.08); opacity: 1; }
+      100% { transform: translateY(-50%) scale(1); opacity: 1; }
+    }
+    .art-seek-badge {
+      animation: popSeek 0.2s ease-out forwards;
+      transition: opacity 0.2s ease-out;
+    }
   </style>
 </head>
 <body class="flex min-h-full flex-col bg-[#0b0f19] text-slate-400 font-body antialiased transmit-glow overflow-x-hidden">
@@ -116,7 +126,7 @@
     </div>
   </footer>
 
-  <script defer src="/js/main.js?v=1788915622"></script>
+  <script defer src="/js/main.js?v=1788939838"></script>
         <script src="/vendor/artplayer.min.js"></script>
       </body>
 </html>

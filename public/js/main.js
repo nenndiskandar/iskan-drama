@@ -758,6 +758,25 @@
       player.template.$player.appendChild(epDrawer);
     }
 
+    // Double Tap Seek Feedback Elements (YouTube style)
+    var seekLeftEl = document.createElement('div');
+    seekLeftEl.id = 'art-seek-left';
+    seekLeftEl.className = 'art-seek-badge';
+    seekLeftEl.style.cssText = 'display:none;position:absolute;left:24px;top:50%;z-index:120;background:rgba(11,15,25,0.85);backdrop-filter:blur(6px);border:1px solid rgba(139,92,246,0.5);color:#fff;padding:10px 16px;border-radius:999px;font-size:12px;font-weight:700;align-items:center;gap:6px;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);';
+    seekLeftEl.innerHTML = '<span>⏪</span> <span>-10s</span>';
+
+    var seekRightEl = document.createElement('div');
+    seekRightEl.id = 'art-seek-right';
+    seekRightEl.className = 'art-seek-badge';
+    seekRightEl.style.cssText = 'display:none;position:absolute;right:24px;top:50%;z-index:120;background:rgba(11,15,25,0.85);backdrop-filter:blur(6px);border:1px solid rgba(139,92,246,0.5);color:#fff;padding:10px 16px;border-radius:999px;font-size:12px;font-weight:700;align-items:center;gap:6px;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.5);';
+    seekRightEl.innerHTML = '<span>+10s</span> <span>⏩</span>';
+
+    if (player.template && player.template.$player) {
+      player.template.$player.appendChild(epDrawer);
+      player.template.$player.appendChild(seekLeftEl);
+      player.template.$player.appendChild(seekRightEl);
+    }
+
     epDrawer.addEventListener('click', function (e) {
       var btn = e.target.closest('button[data-artep]');
       if (btn) {
@@ -768,6 +787,63 @@
       if (e.target.id === 'art-close-ep-drawer' || e.target.closest('#art-close-ep-drawer')) {
         epDrawer.style.display = 'none';
       }
+    });
+
+    function triggerSeekFeedback(side) {
+      var el = side === 'left' ? seekLeftEl : seekRightEl;
+      if (!el) return;
+      el.style.display = 'flex';
+      el.style.opacity = '1';
+      clearTimeout(el.__seekTimer);
+      el.__seekTimer = setTimeout(function () {
+        el.style.opacity = '0';
+        setTimeout(function () { el.style.display = 'none'; }, 200);
+      }, 550);
+    }
+
+    function handleDoubleTap(clientX) {
+      if (!player || !player.template || !player.template.$player) return;
+      var rect = player.template.$player.getBoundingClientRect();
+      var relX = clientX - rect.left;
+      var width = rect.width;
+      if (width <= 0) return;
+
+      if (relX < width * 0.42) {
+        // Left double-tap: Rewind 10s
+        player.currentTime = Math.max(0, player.currentTime - 10);
+        triggerSeekFeedback('left');
+      } else if (relX > width * 0.58) {
+        // Right double-tap: Forward 10s
+        var dur = player.duration || 9999;
+        player.currentTime = Math.min(dur, player.currentTime + 10);
+        triggerSeekFeedback('right');
+      }
+    }
+
+    // Touch event listener for mobile double tap
+    var lastTapTime = 0;
+    var lastTapX = 0;
+    player.template.$player.addEventListener('touchend', function (e) {
+      if (e.target.closest('.art-controls') || e.target.closest('#art-ep-drawer')) return;
+      var touch = e.changedTouches && e.changedTouches[0];
+      if (!touch) return;
+      var now = Date.now();
+      var delta = now - lastTapTime;
+      var dist = Math.abs(touch.clientX - lastTapX);
+      if (delta < 320 && dist < 75) {
+        e.preventDefault();
+        handleDoubleTap(touch.clientX);
+        lastTapTime = 0;
+      } else {
+        lastTapTime = now;
+        lastTapX = touch.clientX;
+      }
+    }, { passive: false });
+
+    // Double click for desktop
+    player.template.$player.addEventListener('dblclick', function (e) {
+      if (e.target.closest('.art-controls') || e.target.closest('#art-ep-drawer')) return;
+      handleDoubleTap(e.clientX);
     });
 
     // Custom Controls inside ArtPlayer control bar
