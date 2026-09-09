@@ -75,13 +75,22 @@
       }
     }
     /* Double Tap Seek Animation Badge */
-    @keyframes popSeek {
-      0% { transform: translateY(-50%) scale(0.8); opacity: 0; }
-      60% { transform: translateY(-50%) scale(1.08); opacity: 1; }
-      100% { transform: translateY(-50%) scale(1); opacity: 1; }
+    @keyframes popSeekLeft {
+      0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+      50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
     }
-    .art-seek-badge {
-      animation: popSeek 0.2s ease-out forwards;
+    @keyframes popSeekRight {
+      0% { transform: translate(50%, -50%) scale(0.7); opacity: 0; }
+      50% { transform: translate(50%, -50%) scale(1.1); opacity: 1; }
+      100% { transform: translate(50%, -50%) scale(1); opacity: 1; }
+    }
+    #art-seek-left.art-seek-badge {
+      animation: popSeekLeft 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      transition: opacity 0.2s ease-out;
+    }
+    #art-seek-right.art-seek-badge {
+      animation: popSeekRight 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
       transition: opacity 0.2s ease-out;
     }
   </style>
@@ -126,7 +135,7 @@
     </div>
   </footer>
 
-  <script defer src="/js/main.js?v=1788939838"></script>
+  <script defer src="/js/main.js?v=1788940070"></script>
         <script src="/vendor/artplayer.min.js"></script>
       </body>
 </html>
