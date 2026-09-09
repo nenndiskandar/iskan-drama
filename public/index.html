@@ -30,6 +30,50 @@
     .grid.grid-cols-3{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
     @media (min-width:768px){.grid.grid-cols-3{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
     @media (min-width:1024px){.grid.grid-cols-3{grid-template-columns:repeat(6,minmax(0,1fr))!important}}
+
+    /* ArtPlayer Control Shield: volume selalu aktif & fullscreen tidak terpotong */
+    .art-video-player .art-controls {
+      padding: 0 4px !important;
+      box-sizing: border-box !important;
+    }
+    .art-video-player .art-controls-left {
+      display: flex !important;
+      align-items: center !important;
+      flex-shrink: 1 !important;
+      min-width: 0 !important;
+      gap: 1px !important;
+    }
+    .art-video-player .art-controls-right {
+      display: flex !important;
+      align-items: center !important;
+      flex-shrink: 0 !important;
+      gap: 2px !important;
+      margin-left: auto !important;
+    }
+    .art-video-player .art-control {
+      padding: 0 2px !important;
+      min-width: unset !important;
+    }
+    .art-video-player .art-control-volume {
+      display: flex !important;
+      padding: 0 2px !important;
+    }
+    .art-video-player .art-control-time {
+      font-size: 10px !important;
+      padding: 0 2px !important;
+      white-space: nowrap !important;
+    }
+    .art-video-player .art-control-fullscreen {
+      display: flex !important;
+      flex-shrink: 0 !important;
+      padding: 0 3px !important;
+    }
+    @media (max-width: 639px) {
+      .art-video-player .art-control-fullscreenWeb,
+      .art-video-player .art-control-pip {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body class="flex min-h-full flex-col bg-[#0b0f19] text-slate-400 font-body antialiased transmit-glow overflow-x-hidden">
@@ -72,7 +116,7 @@
     </div>
   </footer>
 
-  <script defer src="/js/main.js?v=1788660400"></script>
+  <script defer src="/js/main.js?v=1788915622"></script>
         <script src="/vendor/artplayer.min.js"></script>
       </body>
 </html>
