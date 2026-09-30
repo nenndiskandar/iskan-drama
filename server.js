@@ -170,7 +170,7 @@ function parseItemsFromRSC(html, defaultCat = 'drama-pendek-china') {
 async function asiaboxFetchIndex(page = 1, provider = 'all') {
   let cat = provider || 'all';
 
-  // Home view (page 1, all/home): Group into Popular 🚀 and Terbaru 🔥
+  // Home view (page 1, all/home): Group into Popular  and Terbaru 
   if (page === 1 && (cat === 'all' || cat === 'home' || cat === 'narto' || cat === 'bibishort')) {
     const targetUrl = 'https://asiaboxdrama.com/id';
     const r = await getText(targetUrl, { timeout: 25000 });
@@ -200,7 +200,7 @@ async function asiaboxFetchIndex(page = 1, provider = 'all') {
     if (popItems.length > 0) {
       sections.push({
         tab_key: 'popular',
-        tab_label: 'Drama Popular 🚀',
+        tab_label: 'Drama Popular',
         page: 1,
         items: popItems,
       });
@@ -208,7 +208,7 @@ async function asiaboxFetchIndex(page = 1, provider = 'all') {
     if (latItems.length > 0) {
       sections.push({
         tab_key: 'latest',
-        tab_label: 'Drama Terbaru 🔥',
+        tab_label: 'Drama Terbaru',
         page: 1,
         items: latItems,
       });

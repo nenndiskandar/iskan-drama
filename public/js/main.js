@@ -1,5 +1,5 @@
 /**
- * main.js — Iskan Drama SPA (AsiaBox Drama Edition)
+ * main.js: Iskan Drama SPA (AsiaBox Drama Edition)
  */
 (function () {
   'use strict';
@@ -123,7 +123,7 @@
         : '<div class="flex h-full w-full items-center justify-center bg-slate-900 text-3xl font-extrabold text-violet-500">' + esc((displayTitle || 'N').trim().charAt(0).toUpperCase()) + '</div>';
 
     return (
-      '<a href="#/detail/' + encodeURIComponent(m.slug || m.id) + '" class="group block w-full transition-opacity duration-300 hover:opacity-90">' +
+      '<a href="#/detail/' + encodeURIComponent(m.slug || m.id) + '" class="group block w-full transition-opacity duration-300 hover:opacity-90 focus-visible:ring-2 focus-visible:ring-violet-500 rounded-t-2xl">' +
       '<div class="relative aspect-[2/3] w-full overflow-hidden rounded-t-2xl rounded-b-none bg-slate-950">' +
       poster + epBadge + dubbingBadge +
       '<div class="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">' +
@@ -131,7 +131,7 @@
       '<svg class="h-5 w-5 ml-0.5 fill-current" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>' +
       '</div></div></div>' +
       '<div class="pt-2">' +
-      '<h3 class="text-[11px] font-medium text-slate-100 leading-snug line-clamp-2">' + esc(displayTitle) + '</h3>' +
+      '<h3 class="text-xs font-medium text-slate-200 leading-snug line-clamp-2">' + esc(displayTitle) + '</h3>' +
       '</div>' +
       '</a>'
     );
@@ -148,9 +148,9 @@
       return '<a href="#/?page=' + page + prov + '" class="' + cls + '">' + label + '</a>';
     }
 
-    var btnCls = 'flex h-9 min-w-9 px-3 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-xs font-semibold text-slate-300 hover:border-violet-500 hover:text-white transition-colors';
-    var curCls = 'flex h-9 min-w-9 px-3 items-center justify-center rounded-lg text-xs font-bold bg-violet-600 text-white shadow-lg shadow-violet-600/30';
-    var disCls = 'flex h-9 min-w-9 px-3 items-center justify-center rounded-lg border border-slate-800/40 bg-slate-900/40 text-xs font-semibold text-slate-600 opacity-40 pointer-events-none';
+    var btnCls = 'flex min-h-[44px] min-w-[44px] px-3.5 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-300 hover:border-violet-500 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-violet-400';
+    var curCls = 'flex min-h-[44px] min-w-[44px] px-3.5 items-center justify-center rounded-lg text-xs font-bold bg-violet-600 text-white shadow-sm';
+    var disCls = 'flex min-h-[44px] min-w-[44px] px-3.5 items-center justify-center rounded-lg border border-slate-800/40 bg-slate-900/40 text-xs font-semibold text-slate-400 opacity-40 pointer-events-none';
 
     var html = '';
 
@@ -164,7 +164,7 @@
       if (hasNext) html += link(3, '3', btnCls);
     } else {
       html += link(1, '1', btnCls);
-      if (cur > 3) html += '<span class="text-slate-600 px-1">…</span>';
+      if (cur > 3) html += '<span class="text-slate-400 px-1">…</span>';
       if (cur > 2) html += link(cur - 1, String(cur - 1), btnCls);
       html += '<span class="' + curCls + '">' + cur + '</span>';
       if (hasNext) html += link(cur + 1, String(cur + 1), btnCls);
@@ -205,9 +205,18 @@
           var tabsHtml = providers.map(function (p) {
             var active = (state.provider === p.key || (!state.provider && p.key === 'all'));
             var cls = active
-              ? 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-violet-600 text-white shadow-md shadow-violet-600/30'
-              : 'px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-800 bg-slate-900/60 text-slate-400 hover:border-violet-500 hover:text-white transition-colors';
-            return '<a href="#/?page=1&provider=' + encodeURIComponent(p.key) + '" class="' + cls + '">' + esc(p.label) + '</a>';
+              ? 'min-h-[44px] px-3.5 py-2.5 text-xs font-semibold rounded-lg bg-violet-600 text-white shadow-sm flex items-center justify-center focus-visible:ring-2 focus-visible:ring-violet-400 gap-1.5'
+              : 'min-h-[44px] px-3.5 py-2.5 text-xs font-medium rounded-lg border border-slate-800 bg-slate-900 text-slate-300 hover:border-violet-500 hover:text-white transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-violet-400 gap-1.5';
+            var icon = '<i class="bi bi-collection-play"></i>';
+            if (p.key === 'all') icon = '<i class="bi bi-house-door"></i>';
+            else if (/popular/i.test(p.key)) icon = '<i class="bi bi-fire text-amber-400"></i>';
+            else if (/terbaru|latest/i.test(p.key)) icon = '<i class="bi bi-sparkles text-violet-300"></i>';
+            else if (/china|dracin/i.test(p.key)) icon = '<i class="bi bi-film"></i>';
+            else if (/barat/i.test(p.key)) icon = '<i class="bi bi-globe2"></i>';
+            else if (/ceo/i.test(p.key)) icon = '<i class="bi bi-briefcase"></i>';
+            else if (/cultivation|silat/i.test(p.key)) icon = '<i class="bi bi-shield-shaded"></i>';
+            else if (/animasi|donghua/i.test(p.key)) icon = '<i class="bi bi-controller"></i>';
+            return '<a href="#/?page=1&provider=' + encodeURIComponent(p.key) + '" class="' + cls + '">' + icon + ' <span>' + esc(p.label) + '</span></a>';
           }).join('');
           providerTabs = '<div class="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-thin">' + tabsHtml + '</div>';
         }
@@ -217,9 +226,9 @@
           '<div class="mb-6">' +
           '<div class="relative max-w-md">' +
           '<input type="text" id="search-input" placeholder="Cari judul drama..." value="' + esc(state.query) + '" ' +
-          'class="w-full rounded-xl border border-slate-800 bg-slate-900/90 py-2.5 pl-10 pr-10 text-xs text-white placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500">' +
-          '<svg class="pointer-events-none absolute left-3.5 top-3 h-4 w-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>' +
-          (state.query ? '<button id="clear-search" class="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs">✕</button>' : '') +
+          'class="w-full min-h-[44px] rounded-lg border border-slate-800 bg-slate-900 py-2.5 pl-10 pr-10 text-xs text-white placeholder-slate-400 focus:border-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">' +
+          '<svg class="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>' +
+          (state.query ? '<button id="clear-search" aria-label="Hapus pencarian" class="min-w-[44px] min-h-[44px] flex items-center justify-center absolute right-1 top-0 text-slate-300 hover:text-white text-xs"><i class="bi bi-x-lg"></i></button>' : '') +
           '</div></div>';
 
         // Hero Banner
@@ -245,10 +254,13 @@
             return n;
           });
           if (!items.length) return '';
+          var secIcon = '<i class="bi bi-collection-play text-violet-400"></i>';
+          if (/popular/i.test(s.tab_key || s.tab_label)) secIcon = '<i class="bi bi-fire text-amber-400"></i>';
+          else if (/terbaru|latest/i.test(s.tab_key || s.tab_label)) secIcon = '<i class="bi bi-sparkles text-violet-400"></i>';
           var head = s.tab_label
             ? '<div class="flex items-center gap-2.5 mb-4 mt-6">' +
               '<span class="h-5 w-1 rounded-full bg-violet-500"></span>' +
-              '<h2 class="text-base sm:text-lg font-extrabold tracking-tight text-white flex items-center gap-2">' + esc(s.tab_label) + '</h2>' +
+              '<h2 class="text-base sm:text-lg font-extrabold tracking-tight text-white flex items-center gap-2">' + secIcon + ' <span>' + esc(s.tab_label) + '</span></h2>' +
               '</div>'
             : '';
           var grid = '<div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4 w-full">' +
@@ -414,8 +426,8 @@
             : '<div class="flex items-center justify-center h-[380px] rounded-2xl border border-slate-800 bg-slate-900 text-5xl font-extrabold text-violet-500">' + esc((displayTitle || 'N').trim().charAt(0).toUpperCase()) + '</div>';
 
         var meta =
-          (m.episodes ? '<span class="text-slate-300">📺 ' + m.episodes + ' Episode</span>' : '') +
-          (m.category ? '<span class="text-slate-300">📂 ' + esc(m.category) + '</span>' : '');
+          (m.episodes ? '<span class="text-slate-300"><i class="bi bi-film"></i> ' + m.episodes + ' Episode</span>' : '') +
+          (m.category ? '<span class="text-slate-300"><i class="bi bi-folder"></i> ' + esc(m.category) + '</span>' : '');
 
         var watchBtn =
           '<a href="#/watch/' + encodeURIComponent(m.slug || m.id) + '" class="mt-5 flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold py-3 shadow-lg shadow-violet-600/30 transition-all">' +
@@ -553,7 +565,7 @@
       var lab = document.getElementById('ep-label');
       if (lab) lab.textContent = 'Ep ' + n + ' / ' + eps.length;
       var titleBadge = document.getElementById('title-ep-badge');
-      if (titleBadge) titleBadge.textContent = '— Ep ' + n;
+      if (titleBadge) titleBadge.textContent = ' (Ep ' + n + ')';
       var ctrlBtn = document.getElementById('art-control-ep-btn');
       if (ctrlBtn) ctrlBtn.textContent = 'Ep ' + n + ' ▾';
       if (updateDrawerActive) updateDrawerActive();
@@ -604,8 +616,8 @@
       '        <span class="text-slate-600">/</span>' +
       '        <span class="text-slate-400">Nonton</span>' +
       '      </div>' +
-      '      <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug">' +
-      '        ' + esc(displayTitle) + ' <span id="title-ep-badge" class="text-base sm:text-lg font-normal text-violet-400 ml-1">— Ep ' + ep + '</span>' +
+      '<h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-snug">' +
+      '        ' + esc(displayTitle) + ' <span id="title-ep-badge" class="text-base sm:text-lg font-normal text-violet-400 ml-1">(Ep ' + ep + ')</span>' +
       '      </h1>' +
       '    </div>' +
       '  </div>' +
@@ -618,13 +630,13 @@
       '      </div>' +
       '      <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-3 flex flex-col items-center justify-center gap-2.5 text-center text-sm text-slate-400">' +
       '        <div class="flex items-center justify-center gap-2">' +
-      '          <button type="button" id="prev-ep-btn" aria-label="Episode sebelumnya" class="flex h-8 px-3 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/90 text-xs font-semibold text-slate-300 hover:border-violet-500 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors">‹ Prev</button>' +
+      '          <button type="button" id="prev-ep-btn" aria-label="Episode sebelumnya" class="flex min-h-[44px] min-w-[44px] px-3.5 items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-300 hover:border-violet-500 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-400"><i class="bi bi-chevron-left"></i> Prev</button>' +
       '          <span id="ep-label" class="font-bold text-white text-xs px-2">Ep ' + ep + ' / ' + eps.length + '</span>' +
-      '          <button type="button" id="next-ep-btn" aria-label="Episode berikutnya" class="flex h-8 px-3 items-center justify-center rounded-lg border border-slate-800 bg-slate-900/90 text-xs font-semibold text-slate-300 hover:border-violet-500 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors">Next ›</button>' +
+      '          <button type="button" id="next-ep-btn" aria-label="Episode berikutnya" class="flex min-h-[44px] min-w-[44px] px-3.5 items-center justify-center gap-1 rounded-lg border border-slate-800 bg-slate-900 text-xs font-semibold text-slate-300 hover:border-violet-500 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-colors focus-visible:ring-2 focus-visible:ring-violet-400">Next <i class="bi bi-chevron-right"></i></button>' +
       '        </div>' +
       '        <div class="flex items-center justify-center gap-2">' +
       '          <div id="player-source-badge" class="px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-emerald-500/90 text-black">MP4 HD</div>' +
-      '          <span id="player-res-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-800 text-slate-300">Res: —</span>' +
+      '          <span id="player-res-badge" class="hidden px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide bg-slate-800 text-slate-300">Res: Auto</span>' +
       '        </div>' +
       '      </div>' +
       '    </div>' +
@@ -646,12 +658,12 @@
       '      <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 space-y-3">' +
       '        <div class="flex items-center gap-2">' +
       '          <span class="h-4 w-1 rounded-full bg-violet-500"></span>' +
-      '          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Informasi Drama</h3>' +
+      '          <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5"><i class="bi bi-info-circle text-violet-400"></i> Informasi Drama</h3>' +
       '        </div>' +
       '        <div class="flex flex-wrap gap-2 text-xs">' +
-      (m.category ? '          <span class="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-slate-300 font-medium">📂 ' + esc(m.category) + '</span>' : '') +
-      '          <span class="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-slate-300 font-medium">📺 ' + eps.length + ' Episode</span>' +
-      '          <span class="px-2.5 py-1 rounded-md bg-emerald-950/60 border border-emerald-800/40 text-emerald-400 font-medium">✓ Sub Indo HD</span>' +
+      (m.category ? '          <span class="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-slate-300 font-medium"><i class="bi bi-folder"></i> ' + esc(m.category) + '</span>' : '') +
+      '          <span class="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-slate-300 font-medium"><i class="bi bi-film"></i> ' + eps.length + ' Episode</span>' +
+      '          <span class="px-2.5 py-1 rounded-md bg-emerald-950/60 border border-emerald-800/40 text-emerald-400 font-medium"><i class="bi bi-check2"></i> Sub Indo HD</span>' +
       '        </div>' +
       '        <p class="text-xs sm:text-sm text-slate-400 leading-relaxed pt-1">' + esc(m.description || 'Nonton streaming drama pendek sub indo gratis kualitas HD terlengkap.') + '</p>' +
       '      </div>' +
@@ -734,10 +746,10 @@
       epDrawer.innerHTML =
         '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(51,65,85,0.6);padding-bottom:10px;margin-bottom:12px;">' +
         '  <div style="display:flex;align-items:center;gap:8px;">' +
-        '    <span style="color:#fff;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Pilih Episode</span>' +
+        '    <span style="color:#fff;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;"><i class="bi bi-collection-play" style="color:#8b5cf6;"></i> Pilih Episode</span>' +
         '    <span style="border-radius:4px;background:#8b5cf6;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;">Total ' + eps.length + ' Ep</span>' +
         '  </div>' +
-        '  <button type="button" id="art-close-ep-drawer" style="color:#94a3b8;font-size:18px;font-weight:700;background:none;border:none;cursor:pointer;padding:4px 8px;">✕</button>' +
+        '  <button type="button" id="art-close-ep-drawer" style="color:#94a3b8;font-size:18px;font-weight:700;background:none;border:none;cursor:pointer;padding:4px 8px;"><i class="bi bi-x-lg"></i></button>' +
         '</div>' +
         '<div id="art-drawer-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(44px, 1fr));gap:8px;overflow-y:auto;flex:1;padding-right:4px;">' +
         dBtns +

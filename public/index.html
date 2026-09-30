@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iskan Drama — Stream Short Dramas</title>
-  <meta name="description" content="Listen and watch short drama mini-series free. Powered by Transmit audio/video UI.">
+  <title>Iskan Drama: Nonton Streaming Drama Pendek Sub Indo</title>
+  <meta name="description" content="Nonton streaming drama pendek mini series Sub Indo gratis kualitas HD.">
   <link rel="icon" type="image/svg+xml" href="/images/logo.svg">
-  <link rel="stylesheet" href="/css/styles.css?v=1788400785">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/css/styles.css?v=1790781519">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-  /* Mobile shield: guarantee 3-col grid under 640px, bypass any stale cached CSS.
-     md/lg/xl breakpoints above still win on larger screens (their rules come later). */
+  /* Mobile shield: guarantee 3-col grid under 640px, bypass any stale cached CSS */
   @media (max-width:639px){
     .grid.grid-cols-3{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
   }
@@ -23,6 +23,14 @@
   }
   @media (min-width:1280px){
     .grid.grid-cols-8{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important}
+  }
+
+  /* Accessible Focus Rings (R-32) */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible {
+    outline: 2px solid #8b5cf6 !important;
+    outline-offset: 2px !important;
   }
 </style>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -95,20 +103,20 @@
     }
   </style>
 </head>
-<body class="flex min-h-full flex-col bg-[#0b0f19] text-slate-400 font-body antialiased transmit-glow overflow-x-hidden">
+<body class="flex min-h-full flex-col bg-[#0b0f19] text-slate-300 font-body antialiased overflow-x-hidden">
 
-  <!-- Transmit Header Layout -->
-  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-[#0b0f19]/80 backdrop-blur-md">
-    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
+  <!-- Header Layout -->
+  <header class="sticky top-0 z-40 border-b border-slate-800 bg-[#0b0f19]/95 backdrop-blur-md">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
       
       <!-- Brand / Logo -->
-      <a href="#/" class="flex items-center gap-3 group">
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-pink-500 text-white shadow-lg shadow-violet-500/25 group-hover:scale-105 transition-transform overflow-hidden">
+      <a href="#/" class="flex items-center gap-3 group focus-visible:ring-2 focus-visible:ring-violet-500 rounded-lg p-1">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 text-white shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
           <img src="/images/logo.svg" alt="Iskan Drama" class="h-10 w-10 object-cover">
         </div>
         <div class="flex flex-col">
-          <span class="text-lg font-extrabold tracking-tight text-white group-hover:text-violet-400 transition-colors">Iskan<span class="text-violet-500">Drama</span></span>
-          <span class="text-[10px] font-medium text-slate-400 tracking-wider uppercase">Transmit Stream Engine</span>
+          <span class="text-lg font-bold tracking-tight text-white group-hover:text-violet-400 transition-colors">Iskan<span class="text-violet-500">Drama</span></span>
+          <span class="text-[11px] font-medium text-slate-400 tracking-wide">Streaming Drama Pendek Sub-Indo</span>
         </div>
       </a>
 
@@ -117,25 +125,25 @@
 
   <!-- Main View Container -->
   <main class="flex-grow">
-    <div id="app" class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div id="app" class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       <div class="flex items-center justify-center py-20">
         <div class="flex flex-col items-center gap-3">
           <div class="h-10 w-10 animate-spin rounded-full border-4 border-violet-500/20 border-t-violet-500"></div>
-          <span class="text-xs font-medium text-slate-500">Loading Transmit feed...</span>
+          <span class="text-xs font-semibold text-slate-300">Memuat daftar drama...</span>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- Transmit Footer -->
-  <footer class="border-t border-slate-800/60 bg-[#0b0f19] py-8">
-    <div class="mx-auto max-w-7xl px-4 text-center text-xs text-slate-500 sm:px-6 lg:px-8">
-      <p class="font-medium text-slate-400 mb-1">Iskan Drama — Transmit Template Edition</p>
-      <p>Short drama streaming index. All rights reserved by respective providers.</p>
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 bg-[#0b0f19] py-8">
+    <div class="mx-auto max-w-7xl px-4 text-center text-xs text-slate-400 sm:px-6 lg:px-8 space-y-1">
+      <p class="font-medium text-slate-300">Iskan Drama: Streaming Drama Pendek Sub Indo</p>
+      <p class="text-slate-400">Pusat nonton drama pendek gratis kualitas HD.</p>
     </div>
   </footer>
 
-  <script defer src="/js/main.js?v=1788943527"></script>
-        <script src="/vendor/artplayer.min.js"></script>
-      </body>
+  <script defer src="/js/main.js?v=1790781519"></script>
+  <script src="/vendor/artplayer.min.js"></script>
+</body>
 </html>

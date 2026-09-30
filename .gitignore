@@ -5,3 +5,5 @@ node_modules/
 # ignore OS files
 .DS_Store
 Thumbs.db
+server.log
+*.log
