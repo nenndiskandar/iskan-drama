@@ -2,10 +2,10 @@
   "name": "iskan-drama",
   "version": "1.0.0",
   "description": "Iskan Drama — SPA short drama streaming index with raw pass-through proxy (Pocket Tailwind skin)",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "node app.js",
+    "start": "node server.js",
+    "dev": "node server.js",
     "build:css": "tailwindcss -i ./public/css/tailwind.css -o ./public/css/styles.css --minify",
     "watch:css": "tailwindcss -i ./public/css/tailwind.css -o ./public/css/styles.css --watch"
   },
